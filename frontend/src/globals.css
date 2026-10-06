@@ -1,0 +1,243 @@
+@import "material-icons/iconfont/filled.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Palettes match pixeldrain's built-in themes (Nord by default, Solarized as
+   the alternative). Values are RGB triplets so Tailwind can add alpha. */
+:root,
+[data-theme="nord-dark"] {
+  --bg: 46 52 64;
+  --panel: 59 66 82;
+  --raised: 67 76 94;
+  --input: 78 88 109;
+  --inputhover: 82 93 115;
+  --line: 72 80 100;
+  --ink: 216 222 233;
+  --mute: 166 172 185;
+  --faint: 130 136 150;
+  --hl: 163 190 140;
+  --hltext: 46 52 64;
+  --link: 150 181 124;
+  --danger: 191 97 106;
+  --info: 136 192 208;
+  --ok: 143 188 187;
+  --warn: 235 203 139;
+  --scroll: 143 188 187;
+  --scrollhover: 136 192 208;
+  --shadow: 0 0 0;
+  color-scheme: dark;
+}
+
+[data-theme="nord-light"] {
+  --bg: 216 222 233;
+  --panel: 236 239 244;
+  --raised: 229 233 240;
+  --input: 203 211 226;
+  --inputhover: 196 205 222;
+  --line: 216 222 233;
+  --ink: 67 76 94;
+  --mute: 109 117 132;
+  --faint: 152 158 169;
+  --hl: 163 190 140;
+  --hltext: 59 66 82;
+  --link: 79 114 49;
+  --danger: 191 97 106;
+  --info: 94 129 172;
+  --ok: 68 126 124;
+  --warn: 208 135 112;
+  --scroll: 143 188 187;
+  --scrollhover: 136 192 208;
+  --shadow: 76 86 106;
+  color-scheme: light;
+}
+
+[data-theme="solarized-dark"] {
+  --bg: 0 45 56;
+  --panel: 7 53 65;
+  --raised: 8 61 74;
+  --input: 9 68 83;
+  --inputhover: 11 87 106;
+  --line: 10 76 93;
+  --ink: 146 160 160;
+  --mute: 107 130 133;
+  --faint: 74 104 111;
+  --hl: 133 153 0;
+  --hltext: 7 53 65;
+  --link: 159 184 0;
+  --danger: 220 49 46;
+  --info: 38 139 210;
+  --ok: 42 161 152;
+  --warn: 181 137 0;
+  --scroll: 11 87 106;
+  --scrollhover: 14 106 129;
+  --shadow: 0 0 0;
+  color-scheme: dark;
+}
+
+[data-theme="solarized-light"] {
+  --bg: 237 231 212;
+  --panel: 253 246 226;
+  --raised: 252 243 217;
+  --input: 231 223 197;
+  --inputhover: 225 215 183;
+  --line: 237 231 212;
+  --ink: 88 110 116;
+  --mute: 121 137 138;
+  --faint: 162 171 166;
+  --hl: 133 153 0;
+  --hltext: 253 246 226;
+  --link: 115 133 0;
+  --danger: 220 49 46;
+  --info: 38 139 210;
+  --ok: 42 161 152;
+  --warn: 203 75 22;
+  --scroll: 218 206 164;
+  --scrollhover: 208 192 139;
+  --shadow: 120 110 80;
+  color-scheme: light;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  @apply bg-bg text-ink font-sans text-base antialiased;
+  /* Break Korean between words, not inside them. */
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+  user-select: none;
+  overflow: hidden;
+}
+
+.tnum {
+  font-variant-numeric: tabular-nums;
+}
+
+input,
+textarea,
+[data-selectable] {
+  user-select: text;
+}
+
+:focus-visible {
+  outline: 2px solid rgb(var(--hl));
+  outline-offset: 1px;
+}
+
+::selection {
+  background: rgb(var(--hl) / 0.35);
+}
+
+::-webkit-scrollbar {
+  width: 14px;
+  height: 14px;
+}
+::-webkit-scrollbar-thumb {
+  background: rgb(var(--scroll));
+  border-radius: 10px;
+  border: 4px solid rgb(var(--panel));
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgb(var(--scrollhover));
+}
+::-webkit-scrollbar-track,
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* A faint pixel checkerboard behind the workspace, like pixeldrain's page
+   background. Drawn with gradients, no image assets. */
+.checkers {
+  background-color: rgb(var(--bg));
+  background-image: repeating-conic-gradient(rgb(var(--ink) / 0.025) 0% 25%, transparent 0% 50%);
+  background-size: 16px 16px;
+}
+
+@layer components {
+  /* Buttons sit slightly raised and sink in when pressed. */
+  .btn {
+    @apply inline-flex h-8 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-[6px] bg-input px-3 text-sm text-ink
+      hover:bg-inputhover disabled:pointer-events-none disabled:opacity-40;
+    box-shadow: 1px 1px 0 0 rgb(var(--shadow) / 0.45);
+    transition: background 0.1s, box-shadow 0.1s, padding 0.1s;
+  }
+  .btn:active {
+    box-shadow: inset 3px 3px 5px rgb(var(--shadow) / 0.45);
+    padding: 3px calc(0.75rem - 2px) 0 calc(0.75rem + 2px);
+  }
+  .btn-primary {
+    @apply bg-hl font-medium text-hltext hover:bg-hl hover:brightness-110;
+  }
+  .btn-danger {
+    @apply bg-danger text-hltext hover:bg-danger hover:brightness-110;
+  }
+  .btn-quiet {
+    @apply bg-transparent hover:bg-input;
+    box-shadow: none;
+  }
+  .icon-btn {
+    @apply inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-[6px] text-mute transition-colors
+      hover:bg-input hover:text-ink disabled:pointer-events-none disabled:opacity-40;
+  }
+  .icon-btn:active {
+    box-shadow: inset 2px 2px 4px rgb(var(--shadow) / 0.45);
+  }
+  .field {
+    @apply h-9 w-full rounded-[5px] bg-input px-3 text-base text-ink placeholder:text-faint focus:outline-none;
+    box-shadow: inset 1px 1px 0 0 rgb(var(--shadow) / 0.45);
+    transition: box-shadow 0.2s;
+  }
+  .field:focus {
+    box-shadow: inset 0 0 0 1px rgb(var(--hl));
+  }
+  .label {
+    @apply text-sm text-mute;
+  }
+  .spinner {
+    @apply inline-block h-4 w-4 animate-spin rounded-full border-2 border-current border-r-transparent;
+  }
+  /* pixeldrain's glowing highlight border, used for the focused row. */
+  .glow {
+    box-shadow: inset 0 0 5px 1px rgb(var(--hl)), 0 0 1px 0 rgb(var(--hl));
+  }
+}
+
+@keyframes pixel-in {
+  from {
+    opacity: 0;
+    transform: translateY(-3px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* The waiting phase: the server is finishing a large upload. A single soft
+   pulse on the filled pixels; nothing else in the app moves on its own. */
+@keyframes pixel-sweep {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+.pixel-wait {
+  animation: pixel-sweep 1.6s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pixel-wait {
+    animation: none;
+  }
+  * {
+    transition-duration: 0ms !important;
+  }
+}

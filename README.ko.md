@@ -17,7 +17,7 @@
 ![React](https://img.shields.io/badge/React-18-61dafb?style=flat-square&logo=react&logoColor=black)
 [![License](https://img.shields.io/github/license/sioaeko/pixeldrain-desktop?style=flat-square&color=4c566a)](LICENSE)
 
-<img src="docs/screenshots/transfers.png" alt="대용량 파일 4개(12.6 GB)를 파일시스템에 올리는 전송 화면" width="900">
+<img src="docs/screenshots/ko/transfers.png" alt="대용량 파일 4개(12.6 GB)를 파일시스템에 올리는 전송 화면" width="900">
 
 </div>
 
@@ -34,6 +34,7 @@
 | 🔗 **링크로 받기** | `/u/`, `/l/`, `/d/` 링크와 파일 ID를 여러 줄로 붙여 넣기, 클립보드 감지 |
 | 🪟 **Windows 통합** | 탐색기에서 끌어 놓기·Ctrl+V, "보내기 > Pixeldrain", 작업 표시줄 진행률, 완료 알림, 절전 방지 |
 | 🔐 **안전한 키 보관** | API 키는 Windows DPAPI로 암호화해 저장하고 pixeldrain 호스트에만 보냅니다 |
+| 🌐 **한국어 / English** | Windows 표시 언어를 따르고, 설정에서 언제든 바꿀 수 있습니다 |
 
 ## 다운로드
 
@@ -47,12 +48,12 @@
 
 <table>
   <tr>
-    <td width="50%"><img src="docs/screenshots/files.png" alt="내 파일 목록"><p align="center"><sub>내 파일: 종류별 필터와 아래쪽 전송 막대</sub></p></td>
-    <td width="50%"><img src="docs/screenshots/filesystem.png" alt="파일시스템 탐색"><p align="center"><sub>파일시스템: 폴더 탐색, 새 폴더, 공유 링크</sub></p></td>
+    <td width="50%"><img src="docs/screenshots/ko/files.png" alt="내 파일 목록"><p align="center"><sub>내 파일: 종류별 필터와 아래쪽 전송 막대</sub></p></td>
+    <td width="50%"><img src="docs/screenshots/ko/filesystem.png" alt="파일시스템 탐색"><p align="center"><sub>파일시스템: 폴더 탐색, 새 폴더, 공유 링크</sub></p></td>
   </tr>
   <tr>
-    <td width="50%"><img src="docs/screenshots/transfers.png" alt="전송 화면"><p align="center"><sub>전송: 남은 시간, 일시정지, 맨 앞으로, 취소</sub></p></td>
-    <td width="50%"><img src="docs/screenshots/light.png" alt="Solarized 밝은 테마"><p align="center"><sub>Nord / Solarized 테마, 밝게·어둡게·시스템</sub></p></td>
+    <td width="50%"><img src="docs/screenshots/ko/transfers.png" alt="전송 화면"><p align="center"><sub>전송: 남은 시간, 일시정지, 맨 앞으로, 취소</sub></p></td>
+    <td width="50%"><img src="docs/screenshots/ko/light.png" alt="Solarized 밝은 테마"><p align="center"><sub>Nord / Solarized 테마, 밝게·어둡게·시스템</sub></p></td>
   </tr>
 </table>
 
@@ -174,7 +175,7 @@ go run ./cmd/mockserver -addr 127.0.0.1:8091 -throttle 2048
 dev-mock.cmd
 ```
 
-API 키 `test-key` 또는 아이디/비밀번호 `demo`/`demo`로 로그인합니다. `-throttle`(KiB/s)로 전송 속도를 늦추면 진행 화면을 확인하기 쉽습니다. `dev-mock.cmd`는 `PIXELDRAIN_DESKTOP_HOME`을 `.devhome`으로 바꿉니다. 설정, 전송 목록, 기본 저장 폴더가 모두 `.devhome` 안에 생기고, 설치된 앱과 따로 실행됩니다.
+API 키 `test-key` 또는 아이디/비밀번호 `demo`/`demo`로 로그인합니다. `-throttle`(KiB/s)로 전송 속도를 늦추면 진행 화면을 확인하기 쉽고, `-lang en`을 주면 예시 파일 이름이 영어로 만들어집니다. `dev-mock.cmd`는 `PIXELDRAIN_DESKTOP_HOME`을 `.devhome`으로 바꿉니다. 설정, 전송 목록, 기본 저장 폴더가 모두 `.devhome` 안에 생기고, 설치된 앱과 따로 실행됩니다.
 
 ### 대용량 전송 테스트
 

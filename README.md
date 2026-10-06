@@ -17,14 +17,12 @@ Streams files of tens of gigabytes straight from disk, resends them on its own w
 ![React](https://img.shields.io/badge/React-18-61dafb?style=flat-square&logo=react&logoColor=black)
 [![License](https://img.shields.io/github/license/sioaeko/pixeldrain-desktop?style=flat-square&color=4c566a)](LICENSE)
 
-<img src="docs/screenshots/transfers.png" alt="Transfers view uploading four large files (12.6 GB) to the filesystem" width="900">
+<img src="docs/screenshots/en/transfers.png" alt="Transfers view uploading four large files (12.6 GB) to the filesystem" width="900">
 
 </div>
 
 > [!NOTE]
 > This is an unofficial personal project, not affiliated with pixeldrain.com. API behavior and service policy follow the [official API documentation](https://pixeldrain.com/api).
->
-> The interface is currently in **Korean** only.
 
 ## At a glance
 
@@ -36,6 +34,7 @@ Streams files of tens of gigabytes straight from disk, resends them on its own w
 | 🔗 **Download by link** | Paste `/u/`, `/l/`, `/d/` links or file IDs, several per line; clipboard detection |
 | 🪟 **Windows integration** | Drag from Explorer, Ctrl+V, "Send to > Pixeldrain", taskbar progress, completion notifications, sleep prevention |
 | 🔐 **Safe key storage** | The API key is encrypted with Windows DPAPI and only ever sent to pixeldrain hosts |
+| 🌐 **English / Korean** | Follows the Windows display language; switch any time in Settings |
 
 ## Download
 
@@ -49,12 +48,12 @@ Get `Pixeldrain.exe` from [**Releases**](https://github.com/sioaeko/pixeldrain-d
 
 <table>
   <tr>
-    <td width="50%"><img src="docs/screenshots/files.png" alt="My Files list"><p align="center"><sub>My Files: type filters and the bottom transfer bar</sub></p></td>
-    <td width="50%"><img src="docs/screenshots/filesystem.png" alt="Filesystem browser"><p align="center"><sub>Filesystem: folders, new folder, share links</sub></p></td>
+    <td width="50%"><img src="docs/screenshots/en/files.png" alt="My Files list"><p align="center"><sub>My Files: type filters and the bottom transfer bar</sub></p></td>
+    <td width="50%"><img src="docs/screenshots/en/filesystem.png" alt="Filesystem browser"><p align="center"><sub>Filesystem: folders, new folder, share links</sub></p></td>
   </tr>
   <tr>
-    <td width="50%"><img src="docs/screenshots/transfers.png" alt="Transfers view"><p align="center"><sub>Transfers: time left, pause, move to front, cancel</sub></p></td>
-    <td width="50%"><img src="docs/screenshots/light.png" alt="Solarized light theme"><p align="center"><sub>Nord / Solarized themes, light, dark or system</sub></p></td>
+    <td width="50%"><img src="docs/screenshots/en/transfers.png" alt="Transfers view"><p align="center"><sub>Transfers: time left, pause, move to front, cancel</sub></p></td>
+    <td width="50%"><img src="docs/screenshots/en/light.png" alt="Solarized light theme"><p align="center"><sub>Nord / Solarized themes, light, dark or system</sub></p></td>
   </tr>
 </table>
 
@@ -176,7 +175,7 @@ go run ./cmd/mockserver -addr 127.0.0.1:8091 -throttle 2048
 dev-mock.cmd
 ```
 
-Sign in with API key `test-key` or username/password `demo`/`demo`. `-throttle` (KiB/s) slows transfers down so the progress UI is easy to check. `dev-mock.cmd` points `PIXELDRAIN_DESKTOP_HOME` at `.devhome`, so settings, the transfer list and the default download folder all live there, and it runs alongside an installed copy of the app.
+Sign in with API key `test-key` or username/password `demo`/`demo`. `-throttle` (KiB/s) slows transfers down so the progress UI is easy to check, and `-lang en` seeds English sample file names. `dev-mock.cmd` points `PIXELDRAIN_DESKTOP_HOME` at `.devhome`, so settings, the transfer list and the default download folder all live there, and it runs alongside an installed copy of the app.
 
 ### Large transfer tests
 

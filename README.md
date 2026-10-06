@@ -1,148 +1,152 @@
 <div align="center">
 
-<img src="docs/icon.png" width="112" alt="Pixeldrain Desktop 아이콘">
+<img src="docs/icon.png" width="112" alt="Pixeldrain Desktop icon">
 
 # Pixeldrain Desktop
 
-**[pixeldrain.com](https://pixeldrain.com)을 위한 Windows 네이티브 파일 관리자와 대용량 업로더**
+**English** · [한국어](README.ko.md)
 
-수십 GB 파일도 디스크에서 바로 스트리밍하고, 끊기면 알아서 다시 보내고, 끝나면 SHA-256으로 확인합니다.
+**A native Windows file manager and large-file uploader for [pixeldrain.com](https://pixeldrain.com)**
 
-[![Release](https://img.shields.io/github/v/release/sioaeko/pixeldrain-desktop?style=flat-square&color=a3be8c&label=%EB%8B%A4%EC%9A%B4%EB%A1%9C%EB%93%9C)](https://github.com/sioaeko/pixeldrain-desktop/releases/latest)
+Streams files of tens of gigabytes straight from disk, resends them on its own when the connection drops, and checks every upload with SHA-256.
+
+[![Release](https://img.shields.io/github/v/release/sioaeko/pixeldrain-desktop?style=flat-square&color=a3be8c&label=download)](https://github.com/sioaeko/pixeldrain-desktop/releases/latest)
 ![Windows](https://img.shields.io/badge/Windows-10%20%7C%2011-2e3440?style=flat-square&logo=windows)
 ![Go](https://img.shields.io/badge/Go-1.26-00ADD8?style=flat-square&logo=go&logoColor=white)
 ![Wails](https://img.shields.io/badge/Wails-v2-df0000?style=flat-square)
 ![React](https://img.shields.io/badge/React-18-61dafb?style=flat-square&logo=react&logoColor=black)
 [![License](https://img.shields.io/github/license/sioaeko/pixeldrain-desktop?style=flat-square&color=4c566a)](LICENSE)
 
-<img src="docs/screenshots/transfers.png" alt="대용량 파일 4개(12.6 GB)를 파일시스템에 올리는 전송 화면" width="900">
+<img src="docs/screenshots/transfers.png" alt="Transfers view uploading four large files (12.6 GB) to the filesystem" width="900">
 
 </div>
 
 > [!NOTE]
-> pixeldrain.com과 제휴하지 않은 개인 프로젝트입니다. API 동작과 서비스 정책은 [공식 API 문서](https://pixeldrain.com/api)를 따릅니다.
+> This is an unofficial personal project, not affiliated with pixeldrain.com. API behavior and service policy follow the [official API documentation](https://pixeldrain.com/api).
+>
+> The interface is currently in **Korean** only.
 
-## 한눈에 보기
+## At a glance
 
 |  |  |
 |---|---|
-| 📁 **파일 관리자** | 내 파일, 목록, 파일시스템(유료 요금제)을 탐색기처럼. 썸네일, 정렬, 검색, 다중 선택, 오른쪽 클릭 메뉴, 단축키 |
-| 🚀 **대용량 업로드** | 메모리를 거의 쓰지 않는 스트리밍, 자동 재시도, 멈춤 감지, SHA-256 검증, 재시작 후 이어서 |
-| ⬇️ **이어받기 다운로드** | `.pdpart` Range 이어받기, 해시 검증, 폴더 구조 유지, 여유 공간 확인 |
-| 🔗 **링크로 받기** | `/u/`, `/l/`, `/d/` 링크와 파일 ID를 여러 줄로 붙여 넣기, 클립보드 감지 |
-| 🪟 **Windows 통합** | 탐색기에서 끌어 놓기·Ctrl+V, "보내기 > Pixeldrain", 작업 표시줄 진행률, 완료 알림, 절전 방지 |
-| 🔐 **안전한 키 보관** | API 키는 Windows DPAPI로 암호화해 저장하고 pixeldrain 호스트에만 보냅니다 |
+| 📁 **File manager** | Browse My Files, Lists and the Filesystem (paid plans) like Explorer: thumbnails, sorting, search, multi-select, context menus, keyboard shortcuts |
+| 🚀 **Large uploads** | Near-zero memory streaming, automatic retries, stall detection, SHA-256 verification, picks up again after a restart |
+| ⬇️ **Resumable downloads** | `.pdpart` Range resume, hash verification, folder structure kept, free-space check |
+| 🔗 **Download by link** | Paste `/u/`, `/l/`, `/d/` links or file IDs, several per line; clipboard detection |
+| 🪟 **Windows integration** | Drag from Explorer, Ctrl+V, "Send to > Pixeldrain", taskbar progress, completion notifications, sleep prevention |
+| 🔐 **Safe key storage** | The API key is encrypted with Windows DPAPI and only ever sent to pixeldrain hosts |
 
-## 다운로드
+## Download
 
-[**Releases**](https://github.com/sioaeko/pixeldrain-desktop/releases/latest)에서 `Pixeldrain.exe`를 받아 실행하면 됩니다. 설치가 필요 없는 단일 실행 파일입니다.
+Get `Pixeldrain.exe` from [**Releases**](https://github.com/sioaeko/pixeldrain-desktop/releases/latest) and run it. It is a single executable, no installer needed.
 
-- Windows 10/11 x64, [WebView2 런타임](https://developer.microsoft.com/microsoft-edge/webview2/) 필요(Windows 11에는 기본 포함)
-- 서명되지 않은 개인 빌드라 SmartScreen 경고가 뜰 수 있습니다. **추가 정보 → 실행**을 누르세요.
-- 로그인은 [API 키](https://pixeldrain.com/user/api_keys)를 붙여 넣거나 아이디/비밀번호(2단계 인증 포함)로 합니다. 로그인 없이 링크 다운로드만 쓸 수도 있습니다.
+- Windows 10/11 x64 with the [WebView2 runtime](https://developer.microsoft.com/microsoft-edge/webview2/) (built into Windows 11)
+- The build is unsigned, so SmartScreen may warn you. Click **More info → Run anyway**.
+- Sign in by pasting an [API key](https://pixeldrain.com/user/api_keys), or with your username and password (two-factor authentication supported). You can also skip sign-in and only download links.
 
-## 스크린샷
+## Screenshots
 
 <table>
   <tr>
-    <td width="50%"><img src="docs/screenshots/files.png" alt="내 파일 목록"><p align="center"><sub>내 파일: 종류별 필터와 아래쪽 전송 막대</sub></p></td>
-    <td width="50%"><img src="docs/screenshots/filesystem.png" alt="파일시스템 탐색"><p align="center"><sub>파일시스템: 폴더 탐색, 새 폴더, 공유 링크</sub></p></td>
+    <td width="50%"><img src="docs/screenshots/files.png" alt="My Files list"><p align="center"><sub>My Files: type filters and the bottom transfer bar</sub></p></td>
+    <td width="50%"><img src="docs/screenshots/filesystem.png" alt="Filesystem browser"><p align="center"><sub>Filesystem: folders, new folder, share links</sub></p></td>
   </tr>
   <tr>
-    <td width="50%"><img src="docs/screenshots/transfers.png" alt="전송 화면"><p align="center"><sub>전송: 남은 시간, 일시정지, 맨 앞으로, 취소</sub></p></td>
-    <td width="50%"><img src="docs/screenshots/light.png" alt="Solarized 밝은 테마"><p align="center"><sub>Nord / Solarized 테마, 밝게·어둡게·시스템</sub></p></td>
+    <td width="50%"><img src="docs/screenshots/transfers.png" alt="Transfers view"><p align="center"><sub>Transfers: time left, pause, move to front, cancel</sub></p></td>
+    <td width="50%"><img src="docs/screenshots/light.png" alt="Solarized light theme"><p align="center"><sub>Nord / Solarized themes, light, dark or system</sub></p></td>
   </tr>
 </table>
 
-## 대용량 업로드는 이렇게 동작합니다
+## How large uploads work
 
-pixeldrain API에는 나눠 올리기(청크 업로드)가 없어서, 파일 하나는 한 번의 요청으로 끝까지 보내야 합니다. 그래서 **끊기지 않게, 끊겨도 확실하게 복구되게** 만드는 데 집중했습니다.
+The pixeldrain API has no chunked upload, so each file has to go up in a single request from start to finish. The app therefore focuses on **not dropping the connection, and recovering reliably when it does**.
 
 ```text
-로컬 파일 ──스트리밍(+SHA-256 계산)──▶ PUT ──▶ pixeldrain
-   │                                         │
-   │    끊김 · 5xx · 429 · 2분간 멈춤          ▼
-   └──── 2s → 4s → 8s … 재시도 ◀──── 서버 해시와 비교, 다르면 지우고 다시
+local file ──stream (+ SHA-256)──▶ PUT ──▶ pixeldrain
+    │                                        │
+    │   drop · 5xx · 429 · stalled for 2 min ▼
+    └──── retry after 2s → 4s → 8s … ◀──── compare with the server's hash; on mismatch delete and resend
 ```
 
-- **스트리밍**: 디스크에서 바로 보냅니다. 12 GB를 올려도 메모리는 5 MB 남짓입니다.
-- **검증**: 보내는 동안 SHA-256을 계산하고, 끝나면 pixeldrain이 알려 준 해시와 비교합니다. 다르면 잘못 올라간 사본을 지우고 다시 올립니다.
-- **재시도**: 연결 끊김, 5xx, 429는 2초·4초·8초… 간격으로 다시 시도합니다(기본 5번). 2분 동안 바이트가 움직이지 않으면 연결을 끊고 다시 시도합니다.
-- **오프라인 대기**: 인터넷이 끊기면 재시도 횟수를 쓰지 않고 연결이 돌아올 때까지 기다립니다(최대 24시간).
-- **중복 건너뛰기**: 이미 있는 파일은 이름과 크기, 또는 설정에 따라 SHA-256 내용으로 비교해 건너뜁니다.
-- **재시작 복원**: 전송 목록은 디스크에 저장됩니다. 앱을 다시 열면 남은 전송을 이어 갑니다. 다운로드는 `.pdpart`에서 이어받고, 업로드는 처음부터 다시 올립니다.
-- **미리 막기**: 요금제의 파일 크기 한도(무료 10 GB)를 넘는 파일은 보내기 전에 알려 줍니다. 큰 업로드를 일시정지·취소하면 다시 올려야 하는 양을 알려 주고 확인을 받습니다.
-- **그 밖에**: 업로드 속도 제한, 전송 중 절전 방지. 폴더를 "내 파일"에 올리면 폴더 이름의 목록을 자동으로 만들어 링크 하나로 공유합니다.
+- **Streaming**: files are sent straight from disk. A 12 GB upload uses only about 5 MB of memory.
+- **Verification**: SHA-256 is computed while sending and compared with the hash pixeldrain reports. On a mismatch the bad copy is deleted and the file is uploaded again.
+- **Retries**: dropped connections, 5xx and 429 responses are retried after 2, 4, 8… seconds (5 times by default). If no bytes move for 2 minutes, the connection is closed and retried.
+- **Offline wait**: when the internet goes down, the app waits for it to come back (up to 24 hours) without using up retries.
+- **Duplicate skipping**: files that already exist are skipped, compared by name and size or, if you choose, by SHA-256 content.
+- **Restart recovery**: the transfer list is saved to disk. Reopen the app and the remaining transfers continue. Downloads resume from `.pdpart`; uploads start over from the beginning.
+- **Early checks**: files over your plan's size limit (10 GB on the free plan) are rejected before anything is sent. Pausing or cancelling a big upload tells you how much will have to be resent and asks first.
+- **Also**: upload speed limit and sleep prevention during transfers. Uploading a folder to My Files automatically creates a list named after the folder, so it can be shared with one link.
 
-다운로드도 Range 이어받기, 재시도, SHA-256 검증을 거친 뒤에만 최종 파일 이름으로 바꿉니다. CAPTCHA, 다운로드 한도, 법적 차단은 **우회하지 않고** 이유를 그대로 보여 줍니다.
+Downloads also go through Range resume, retries and SHA-256 verification before getting their final file name. CAPTCHAs, download limits and legal blocks are **not bypassed**; the app shows the reason as-is.
 
-### 측정 결과
+### Measurements
 
-수 GB 파일로 확인하는 통합 테스트 결과입니다(Ryzen 7 7800X3D, 같은 PC의 TLS 가짜 서버라 네트워크 속도는 빠진 값).
+Integration tests with multi-gigabyte files (Ryzen 7 7800X3D against a local TLS mock server, so network speed is not a factor).
 
-| 경우 | 4 GB | 12 GB |
+| Case | 4 GB | 12 GB |
 |---|---|---|
-| 업로드 | 646 MB/s, 최대 메모리 5.3 MB | 540 MB/s, 최대 메모리 4.9 MB |
-| 70%에서 연결 끊김 | ✅ 자동 재시도 후 SHA-256 일치 | ✅ 자동 재시도 후 SHA-256 일치 |
-| 30%에서 서버 멈춤 | ✅ 감지 후 재시도, 성공 | |
-| 서버가 12초 동안 마무리 | ✅ 끊지 않고 기다려 한 번에 성공 | |
-| 업로드 2개 동시(4 GB + 2 GB) | 합계 943 MB/s, 최대 메모리 5.7 MB | |
-| 50%에서 다운로드 끊김 | ✅ Range로 이어받아 SHA-256 일치 | ✅ Range로 이어받아 SHA-256 일치 |
-| 무료 요금제 10 GB 초과 | ✅ 한 바이트도 보내기 전에 거부 | |
+| Upload | 646 MB/s, peak memory 5.3 MB | 540 MB/s, peak memory 4.9 MB |
+| Connection dropped at 70% | ✅ retried automatically, SHA-256 matches | ✅ retried automatically, SHA-256 matches |
+| Server stalls at 30% | ✅ detected, retried, succeeded | |
+| Server takes 12 s to finalize | ✅ waited without cutting off, succeeded first try | |
+| Two uploads at once (4 GB + 2 GB) | 943 MB/s combined, peak memory 5.7 MB | |
+| Download dropped at 50% | ✅ resumed with Range, SHA-256 matches | ✅ resumed with Range, SHA-256 matches |
+| Over the free plan's 10 GB limit | ✅ rejected before sending a single byte | |
 
-## 기능 자세히
+## Features in detail
 
 <details>
-<summary><b>파일 관리</b></summary>
+<summary><b>File management</b></summary>
 
-- **내 파일**: 썸네일, 정렬, 검색, 여러 개 선택(Shift/Ctrl, Ctrl+A), 미리 보기(이미지, 동영상, 오디오, PDF, 텍스트), 링크 복사, 목록 만들기, 삭제
-- **목록**: 내 목록 보기, 목록 링크 복사, 목록째 받기(목록 이름 폴더에 저장)
-- **파일시스템**(유료 요금제): 폴더 탐색, 새 폴더, 이름 바꾸기, 삭제, 공유 링크, 폴더 구조를 유지한 업로드와 다운로드
-- 파일 종류별 필터, 선택한 파일의 합계 크기, 정렬 기억
-- 미리 보기에서 ←/→로 이전·다음 파일, 외부 플레이어(mpv, VLC, PotPlayer)로 재생
+- **My Files**: thumbnails, sorting, search, multi-select (Shift/Ctrl, Ctrl+A), preview (image, video, audio, PDF, text), copy link, create list, delete
+- **Lists**: view your lists, copy list links, download a whole list (saved into a folder named after it)
+- **Filesystem** (paid plans): browse folders, new folder, rename, delete, share links, upload and download with folder structure kept
+- Filter by file type, total size of the selection, remembered sort order
+- ←/→ to step through files in the preview, play in an external player (mpv, VLC, PotPlayer)
 
 </details>
 
 <details>
-<summary><b>올리기와 받기</b></summary>
+<summary><b>Uploading and downloading</b></summary>
 
-- 탐색기에서 끌어 놓기, 탐색기에서 복사 후 Ctrl+V, 파일/폴더 선택, 탐색기의 "보내기 > Pixeldrain"(설정에서 켜기)
-- 올리기가 끝나면 링크를 자동으로 복사합니다(폴더는 목록 링크 하나). 형식은 공유 페이지, 직접 다운로드, 마크다운 중에서 고릅니다.
-- `/u/`, `/l/`, `/d/` 링크와 파일 ID를 여러 줄로 붙여 넣어 받기. 다른 곳에서 pixeldrain 링크를 복사하고 돌아오면 받을지 물어봅니다.
-- 두 번째로 실행할 때 넘긴 링크나 파일은 이미 열린 창으로 전달됩니다.
-- 대기 중인 전송을 맨 앞으로 옮기기, 실패한 전송 한 번에 다시 시도
-
-</details>
-
-<details>
-<summary><b>Windows 통합</b></summary>
-
-- 작업 표시줄 아이콘과 창 제목에 전체 진행률
-- 창이 뒤에 있을 때 전송이 끝나면 Windows 알림
-- 전송 중 절전 모드 방지
-- 다운로드 전 저장 드라이브의 여유 공간 확인
-- 창 크기와 위치 기억, 단일 실행
+- Drag from Explorer, copy in Explorer then Ctrl+V, file/folder picker, Explorer's "Send to > Pixeldrain" (enable in settings)
+- Links are copied automatically when uploads finish (one list link for a folder). Choose between share page, direct download and Markdown format.
+- Paste `/u/`, `/l/`, `/d/` links or file IDs, several per line. Copy a pixeldrain link elsewhere and the app offers to download it when you come back.
+- Links or files passed to a second launch are forwarded to the window that is already open.
+- Move queued transfers to the front, retry all failed transfers at once
 
 </details>
 
 <details>
-<summary><b>단축키</b></summary>
+<summary><b>Windows integration</b></summary>
 
-앱에서 `?`를 누르면 전체 목록이 나옵니다.
+- Overall progress on the taskbar icon and in the window title
+- A Windows notification when transfers finish while the window is in the background
+- Prevents sleep during transfers
+- Checks free space on the target drive before downloading
+- Remembers window size and position; single instance
 
 </details>
 
-## 데이터 저장 위치
+<details>
+<summary><b>Keyboard shortcuts</b></summary>
 
-| 경로 | 내용 |
+Press `?` in the app for the full list.
+
+</details>
+
+## Where data is stored
+
+| Path | Contents |
 |---|---|
-| `%APPDATA%\PixeldrainDesktop\config.json` | 설정, 창 크기와 위치, API 키(Windows DPAPI로 암호화) |
-| `%LOCALAPPDATA%\PixeldrainDesktop\queue.json` | 전송 목록 |
-| `%LOCALAPPDATA%\PixeldrainDesktop\hashes.json` | 로컬 파일의 SHA-256 캐시 |
+| `%APPDATA%\PixeldrainDesktop\config.json` | Settings, window size and position, API key (encrypted with Windows DPAPI) |
+| `%LOCALAPPDATA%\PixeldrainDesktop\queue.json` | Transfer list |
+| `%LOCALAPPDATA%\PixeldrainDesktop\hashes.json` | SHA-256 cache of local files |
 
-## 직접 빌드하기
+## Building from source
 
-요구 사항: Go 1.26 이상, Node 20 이상, [Wails CLI](https://wails.io/docs/gettingstarted/installation)
+Requirements: Go 1.26+, Node 20+, the [Wails CLI](https://wails.io/docs/gettingstarted/installation)
 
 ```bash
 go install github.com/wailsapp/wails/v2/cmd/wails@latest
@@ -152,17 +156,17 @@ go install github.com/wailsapp/wails/v2/cmd/wails@latest
 wails build
 ```
 
-결과물은 `build/bin/Pixeldrain.exe`에 생깁니다.
+The result is written to `build/bin/Pixeldrain.exe`.
 
 ```bash
 go test ./...
 ```
 
-가짜 pixeldrain 서버로 업로드, 다운로드, 재시도, 검증을 확인하는 통합 테스트입니다.
+Integration tests for upload, download, retry and verification against a mock pixeldrain server.
 
-### 실제 계정 없이 개발하기
+### Developing without a real account
 
-가짜 API 서버를 띄우고 `dev-mock.cmd`로 실행합니다.
+Start the mock API server, then run `dev-mock.cmd`.
 
 ```bash
 go run ./cmd/mockserver -addr 127.0.0.1:8091 -throttle 2048
@@ -172,40 +176,40 @@ go run ./cmd/mockserver -addr 127.0.0.1:8091 -throttle 2048
 dev-mock.cmd
 ```
 
-API 키 `test-key` 또는 아이디/비밀번호 `demo`/`demo`로 로그인합니다. `-throttle`(KiB/s)로 전송 속도를 늦추면 진행 화면을 확인하기 쉽습니다. `dev-mock.cmd`는 `PIXELDRAIN_DESKTOP_HOME`을 `.devhome`으로 바꿉니다. 설정, 전송 목록, 기본 저장 폴더가 모두 `.devhome` 안에 생기고, 설치된 앱과 따로 실행됩니다.
+Sign in with API key `test-key` or username/password `demo`/`demo`. `-throttle` (KiB/s) slows transfers down so the progress UI is easy to check. `dev-mock.cmd` points `PIXELDRAIN_DESKTOP_HOME` at `.devhome`, so settings, the transfer list and the default download folder all live there, and it runs alongside an installed copy of the app.
 
-### 대용량 전송 테스트
+### Large transfer tests
 
-수 GB 파일 테스트는 따로 켭니다. 가짜 서버가 TLS로 받으면서 해시만 계산하므로(파일을 메모리에 쌓지 않음) 실제 서버처럼 동작합니다.
+Multi-gigabyte tests are opt-in. The mock server receives over TLS and only hashes the data (nothing is buffered in memory), so it behaves like the real server.
 
 ```bash
 PD_LARGE=1 PD_LARGE_GB=12 PD_LARGE_DIR='D:\pdtest' go test -run TestLargeTransfers -v -timeout 2h .
 ```
 
-## 구조
+## Project layout
 
-| 경로 | 역할 |
+| Path | Role |
 |---|---|
-| `api.go` | pixeldrain REST 클라이언트 (API 키는 pixeldrain 호스트에만 전송) |
-| `transfers.go` | 전송 큐, 동시성, 일시정지, 재시도, 저장과 복원, 목록 자동 생성 |
-| `upload.go` / `download.go` | 업로드 스트리밍과 해시 검증 / Range 이어받기와 해시 검증 |
-| `hashes.go` | SHA-256 캐시, 계정 파일 색인(중복 검사) |
-| `links.go` | `/u/`, `/l/`, `/d/` 링크 해석과 공유 폴더 재귀 탐색 |
-| `media.go` | 썸네일과 미리 보기용 루프백 프록시 (API 키를 페이지에 노출하지 않음) |
-| `app.go` | 프런트엔드에 노출하는 메서드 |
-| `internal/mockpd`, `cmd/mockserver` | 테스트와 개발용 가짜 pixeldrain API |
-| `frontend/src/components` | 화면 (`files-view`, `lists-view`, `fs-view`, `transfers-view`, `pixel-strip` …) |
+| `api.go` | pixeldrain REST client (the API key is only sent to pixeldrain hosts) |
+| `transfers.go` | Transfer queue, concurrency, pause, retries, save and restore, automatic lists |
+| `upload.go` / `download.go` | Upload streaming with hash verification / Range resume with hash verification |
+| `hashes.go` | SHA-256 cache, account file index (duplicate checks) |
+| `links.go` | Parsing `/u/`, `/l/`, `/d/` links and walking shared folders recursively |
+| `media.go` | Loopback proxy for thumbnails and previews (keeps the API key out of the page) |
+| `app.go` | Methods exposed to the frontend |
+| `internal/mockpd`, `cmd/mockserver` | Mock pixeldrain API for tests and development |
+| `frontend/src/components` | UI (`files-view`, `lists-view`, `fs-view`, `transfers-view`, `pixel-strip` …) |
 
-Go + [Wails v2](https://wails.io)(WebView2), React 18 + Tailwind CSS 3.4로 만들었습니다.
+Built with Go + [Wails v2](https://wails.io) (WebView2), React 18 and Tailwind CSS 3.4.
 
-## 라이선스와 고지
+## License and notices
 
 [MIT](LICENSE)
 
-pixeldrain 웹사이트 소스([pixeldrain_web](https://github.com/Fornaxian/pixeldrain_web))는 AGPL-3.0입니다. 이 앱은 그 코드, 이미지, 로고를 복사하지 않았고 화면을 보고 다시 구현했습니다. 같은 분위기를 내는 재료는 모두 별도 라이선스입니다.
+The pixeldrain website source ([pixeldrain_web](https://github.com/Fornaxian/pixeldrain_web)) is AGPL-3.0. This app copies none of its code, images or logos; the look was reimplemented by eye. Everything used to match the style is separately licensed:
 
-- 색상: [Nord](https://www.nordtheme.com/)(MIT), [Solarized](https://ethanschoonover.com/solarized/) 팔레트
-- 아이콘: [Material Icons](https://github.com/google/material-design-icons)(Apache-2.0)
-- 앱 아이콘: 직접 만든 픽셀 마크
+- Colors: [Nord](https://www.nordtheme.com/) (MIT) and [Solarized](https://ethanschoonover.com/solarized/) palettes
+- Icons: [Material Icons](https://github.com/google/material-design-icons) (Apache-2.0)
+- App icon: an original pixel mark
 
-이 프로그램은 pixeldrain의 공식 제한을 그대로 따릅니다. 본인이 소유했거나 받을 권한이 있는 파일에만 사용하세요.
+This program respects pixeldrain's official limits. Only use it for files you own or have the right to download.

@@ -5,6 +5,7 @@ import { formatBytes } from "../lib/format";
 import { useApp } from "../store";
 import type { UploadTarget } from "../types";
 import { Menu } from "./ui";
+import { tr } from "../lib/i18n";
 
 export function ViewHeader({
   title,
@@ -34,21 +35,21 @@ export function ViewHeader({
           <Icon name="search" className="pointer-events-none absolute left-2.5 top-1/2 text-[18px] -translate-y-1/2 text-faint" />
           <input
             className="field h-8 pl-8 pr-7 text-sm"
-            placeholder="이름으로 찾기"
+            placeholder={tr("이름으로 찾기", "Search by name")}
             value={query}
             onChange={(e) => onQuery(e.target.value)}
             onKeyDown={(e) => e.key === "Escape" && onQuery("")}
-            aria-label="이름으로 찾기"
+            aria-label={tr("이름으로 찾기", "Search by name")}
           />
           {query && (
-            <button className="absolute right-1.5 top-1/2 -translate-y-1/2 text-faint hover:text-ink" onClick={() => onQuery("")} aria-label="지우기">
+            <button className="absolute right-1.5 top-1/2 -translate-y-1/2 text-faint hover:text-ink" onClick={() => onQuery("")} aria-label={tr("지우기", "Clear")}>
               <Icon name="close" className="text-[15px]" />
             </button>
           )}
         </label>
       )}
       {onRefresh && (
-        <button className="icon-btn" onClick={onRefresh} aria-label="새로 고침" title="새로 고침 (F5)">
+        <button className="icon-btn" onClick={onRefresh} aria-label={tr("새로 고침", "Refresh")} title={tr("새로 고침 (F5)", "Refresh (F5)")}>
           <Icon name="refresh" className={refreshing ? "text-[18px] animate-spin" : "text-[18px]"} />
         </button>
       )}
@@ -60,9 +61,9 @@ export function ViewHeader({
 export function LinkButton() {
   const openLinks = useApp((s) => s.openLinks);
   return (
-    <button className="btn" onClick={() => openLinks()} title="링크로 받기" aria-label="링크로 받기">
+    <button className="btn" onClick={() => openLinks()} title={tr("링크로 받기", "Download by link")} aria-label={tr("링크로 받기", "Download by link")}>
       <Icon name="link" className="text-[18px]" />
-      <span className="hidden lg:inline">링크로 받기</span>
+      <span className="hidden lg:inline">{tr("링크로 받기", "Download by link")}</span>
     </button>
   );
 }
@@ -72,12 +73,12 @@ export function UploadButton({ target }: { target: UploadTarget }) {
     <Menu
       trigger={(open) => (
         <button className="btn btn-primary" onClick={open} aria-haspopup="menu">
-          <Icon name="cloud_upload" className="text-[18px]" /> 올리기
+          <Icon name="cloud_upload" className="text-[18px]" />{tr(" 올리기", " Upload")}
         </button>
       )}
       items={[
-        { label: "파일 선택", icon: <Icon name="note_add" />, onSelect: () => pickUpload(target, false) },
-        { label: "폴더 선택", icon: <Icon name="create_new_folder" />, onSelect: () => pickUpload(target, true) },
+        { label: tr("파일 선택", "Choose files"), icon: <Icon name="note_add" />, onSelect: () => pickUpload(target, false) },
+        { label: tr("폴더 선택", "Choose folder"), icon: <Icon name="create_new_folder" />, onSelect: () => pickUpload(target, true) },
       ]}
     />
   );
@@ -88,12 +89,12 @@ export function SelectionBar({ count, size, onClear, children }: { count: number
   return (
     <div className="flex h-10 shrink-0 items-center gap-1 overflow-x-auto border-b border-line bg-hl/[0.08] px-4">
       <span className="tnum mr-2 shrink-0 whitespace-nowrap text-sm font-medium">
-        {count.toLocaleString("ko-KR")}개 선택됨
+        {tr(`${count.toLocaleString("ko-KR")}개 선택됨`, `${count.toLocaleString("en-US")} selected`)}
         {size !== undefined && <span className="ml-1.5 font-normal text-mute">{formatBytes(size)}</span>}
       </span>
       {children}
       <button className="btn ml-auto text-mute" onClick={onClear}>
-        선택 해제
+        {tr("선택 해제", "Clear selection")}
       </button>
     </div>
   );

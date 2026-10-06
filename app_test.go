@@ -33,7 +33,12 @@ func newEnv(t *testing.T, loggedIn bool) *env {
 	t.Setenv("PIXELDRAIN_API_BASE", hs.URL+"/api")
 	dir := t.TempDir()
 	a := newAppAt(filepath.Join(dir, "config"), filepath.Join(dir, "data"))
-	_ = a.store.update(func(c *Config) { c.Settings.DownloadDir = filepath.Join(dir, "downloads") })
+	// The assertions below check Korean messages, whatever the OS language.
+	_ = a.store.update(func(c *Config) {
+		c.Settings.DownloadDir = filepath.Join(dir, "downloads")
+		c.Settings.Language = "ko"
+	})
+	setLanguage("ko")
 	ctx, cancel := context.WithCancel(context.Background())
 	t.Cleanup(cancel)
 	a.transfers.start(ctx)
@@ -605,5 +610,23 @@ func TestSplitArgs(t *testing.T) {
 	in := splitArgs([]string{"-Embedding", "/Embedding", "----AppNotificationActivated:", f, "https://pixeldrain.com/u/abcd1234", "random words"}, dir)
 	if len(in.Paths) != 1 || in.Paths[0] != f || in.Links != "https://pixeldrain.com/u/abcd1234" {
 		t.Fatalf("bad split %+v", in)
+	}
+}
+
+func TestLanguage(t *testing.T) {
+	defer setLanguage("ko")
+	setLanguage("en")
+	if got := (&apiError{Status: 404, Value: "path_not_found"}).Error(); got != "Path not found" {
+		t.Fatalf("english message = %q", got)
+	}
+	if got := errHashMismatch.Error(); got != "SHA-256 hash mismatch" {
+		t.Fatalf("english sentinel = %q", got)
+	}
+	setLanguage("ko")
+	if got := errHashMismatch.Error(); got != "SHA-256 해시가 일치하지 않습니다" {
+		t.Fatalf("korean sentinel = %q", got)
+	}
+	if l := setLanguage("system"); l != "ko" && l != "en" {
+		t.Fatalf("system language resolved to %q", l)
 	}
 }

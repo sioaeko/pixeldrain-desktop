@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { Fragment, useCallback, useEffect, useState } from "react";
 import { EventsOn } from "../wailsjs/runtime/runtime";
 import { api, errMsg } from "./api";
 import { ContextMenuHost } from "./components/context-menu";
@@ -10,6 +10,7 @@ import { Spinner } from "./components/ui";
 import { uploadPaths } from "./lib/actions";
 import { subscribeTransfers, toast, useApp, useTransfers } from "./store";
 import type { Account, LaunchInput } from "./types";
+import { getLang, Lang, plural, setLang, tr } from "./lib/i18n";
 
 function useTheme() {
   const theme = useApp((s) => s.app?.settings.theme ?? "system");
@@ -31,7 +32,7 @@ function handleLaunch(input: LaunchInput) {
   if (input.links?.trim()) openLinks(input.links);
   if (input.paths?.length) {
     if (app?.loggedIn) uploadPaths(input.paths, { kind: "files", dir: "" });
-    else toast.error("파일을 올리려면 로그인하세요");
+    else toast.error(tr("파일을 올리려면 로그인하세요", "Sign in to upload files"));
   }
 }
 
@@ -41,6 +42,9 @@ export default function App() {
   const [showLogin, setShowLogin] = useState(false);
   const [booting, setBooting] = useState(true);
   useTheme();
+  const langSetting = app?.settings.language ?? "system";
+  const lang: Lang = langSetting === "system" ? (app?.systemLang ?? getLang()) : langSetting;
+  setLang(lang);
 
   const init = useCallback(async () => {
     setBooting(true);
@@ -61,7 +65,7 @@ export default function App() {
     init().then(() => api.takeLaunchArgs().then(handleLaunch));
     const offs = [
       EventsOn("auth:expired", () => {
-        toast.error("API 키가 더 이상 유효하지 않습니다. 다시 로그인하세요");
+        toast.error(tr("API 키가 더 이상 유효하지 않습니다. 다시 로그인하세요", "The API key is no longer valid. Sign in again"));
         const cur = useApp.getState().app;
         if (cur) setApp({ ...cur, loggedIn: false, account: null });
         setShowLogin(true);
@@ -69,32 +73,39 @@ export default function App() {
       EventsOn("app:confirmQuit", () => useApp.getState().setConfirmQuit(true)),
       EventsOn("app:args", handleLaunch),
       EventsOn("app:notice", (tone: "info" | "error", text: string) => {
-        const action = { label: "전송 보기", run: () => useApp.getState().setView("transfers") };
+        const action = { label: tr("전송 보기", "View transfers"), run: () => useApp.getState().setView("transfers") };
         if (tone === "error") toast.error(text);
         else toast.info(text, { action });
       }),
       EventsOn("batch:list", (e: { title: string; url?: string; error?: string; count?: number }) => {
         if (e.error) {
-          toast.error(`"${e.title}" 목록을 만들지 못했습니다`, { detail: e.error });
+          toast.error(tr(`"${e.title}" 목록을 만들지 못했습니다`, `Couldn't create the list "${e.title}"`), { detail: e.error });
           return;
         }
         // With automatic copying the completion toast already covers it.
         if (useApp.getState().app?.settings.copyLinks) return;
-        toast.success(`"${e.title}" 폴더를 목록으로 묶었습니다`, {
+        toast.success(tr(`"${e.title}" 폴더를 목록으로 묶었습니다`, `Grouped the folder "${e.title}" into a list`), {
           detail: e.url,
-          action: { label: "링크 복사", run: () => api.copyText(e.url!).then(() => toast.success("링크를 복사했습니다")) },
+          action: { label: tr("링크 복사", "Copy link"), run: () => api.copyText(e.url!).then(() => toast.success(tr("링크를 복사했습니다", "Link copied"))) },
         });
       }),
       EventsOn("transfers:idle", (r: { uploads: number; downloads: number; failed: number; links: number; copied: boolean }) => {
-        const showTransfers = { label: "전송 보기", run: () => useApp.getState().setView("transfers") };
+        const showTransfers = { label: tr("전송 보기", "View transfers"), run: () => useApp.getState().setView("transfers") };
         if (r.failed > 0) {
-          toast.error(`전송 ${r.failed}개가 실패했습니다`, { action: showTransfers });
+          toast.error(tr(`전송 ${r.failed}개가 실패했습니다`, `${plural(r.failed, "transfer")} failed`), { action: showTransfers });
         }
         if (r.copied) {
-          toast.success(r.links === 1 ? "올리기를 마치고 링크를 복사했습니다" : `올리기를 마치고 링크 ${r.links}개를 복사했습니다`);
+          toast.success(
+            r.links === 1
+              ? tr("올리기를 마치고 링크를 복사했습니다", "Uploads finished; link copied")
+              : tr(`올리기를 마치고 링크 ${r.links}개를 복사했습니다`, `Uploads finished; ${r.links} links copied`),
+          );
         } else if (r.uploads + r.downloads > 0 && r.failed === 0) {
-          const parts = [r.uploads ? `올리기 ${r.uploads}개` : "", r.downloads ? `받기 ${r.downloads}개` : ""].filter(Boolean);
-          toast.success(`${parts.join(", ")}를 마쳤습니다`, { action: showTransfers });
+          const parts = [
+            r.uploads ? tr(`올리기 ${r.uploads}개`, plural(r.uploads, "upload")) : "",
+            r.downloads ? tr(`받기 ${r.downloads}개`, plural(r.downloads, "download")) : "",
+          ].filter(Boolean);
+          toast.success(tr(`${parts.join(", ")}를 마쳤습니다`, `Finished ${parts.join(", ")}`), { action: showTransfers });
         }
       }),
     ];
@@ -105,8 +116,8 @@ export default function App() {
       const text = await api.clipboardLinks().catch(() => "");
       if (!text) return;
       const n = text.split("\n").length;
-      toast.info(n === 1 ? "클립보드에 pixeldrain 링크가 있습니다" : `클립보드에 pixeldrain 링크 ${n}개가 있습니다`, {
-        action: { label: "받기", run: () => useApp.getState().openLinks(text) },
+      toast.info(n === 1 ? tr("클립보드에 pixeldrain 링크가 있습니다", "There is a pixeldrain link on the clipboard") : tr(`클립보드에 pixeldrain 링크 ${n}개가 있습니다`, `There are ${n} pixeldrain links on the clipboard`), {
+        action: { label: tr("받기", "Download"), run: () => useApp.getState().openLinks(text) },
         duration: 12000,
       });
     };
@@ -145,8 +156,9 @@ export default function App() {
     );
   }
 
+  // Keyed by language so every view re-renders its strings after a switch.
   return (
-    <>
+    <Fragment key={lang}>
       {showLogin || !app ? (
         <Login initError={app?.error} onRetry={init} onLoggedIn={loggedIn} onGuest={guest} />
       ) : (
@@ -158,6 +170,6 @@ export default function App() {
       <DialogHost />
       <ContextMenuHost />
       <Toaster />
-    </>
+    </Fragment>
   );
 }

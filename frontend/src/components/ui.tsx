@@ -1,6 +1,7 @@
 import clsx from "clsx";
 import { Icon } from "./icon";
 import { ReactNode, useEffect, useRef, useState } from "react";
+import { tr } from "../lib/i18n";
 
 export function Spinner({ className }: { className?: string }) {
   return <span className={clsx("spinner", className)} aria-hidden />;
@@ -57,7 +58,7 @@ export function Modal({
       >
         <div className="flex items-center justify-between px-5 pb-2 pt-4">
           <h2 className="text-md font-semibold">{title}</h2>
-          <button className="icon-btn -mr-2" onClick={onClose} aria-label="닫기">
+          <button className="icon-btn -mr-2" onClick={onClose} aria-label={tr("닫기", "Close")}>
             <Icon name="close" className="text-[18px]" />
           </button>
         </div>

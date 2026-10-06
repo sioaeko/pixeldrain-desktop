@@ -2,6 +2,7 @@ import clsx from "clsx";
 import { Icon } from "./icon";
 import { ReactNode, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Checkbox } from "./ui";
+import { tr } from "../lib/i18n";
 
 export interface Column<T> {
   key: string;
@@ -177,7 +178,7 @@ export function DataTable<T>({
       >
         <div className="flex items-center">
           <Checkbox
-            label="모두 선택"
+            label={tr("모두 선택", "Select all")}
             checked={allSelected}
             indeterminate={someSelected}
             onChange={(v) => onSelect(v ? new Set(rows.map(rowKey)) : new Set())}
@@ -241,7 +242,7 @@ export function DataTable<T>({
                 >
                   <div className="flex items-center">
                     <Checkbox
-                      label="선택"
+                      label={tr("선택", "Select")}
                       checked={sel}
                       onChange={(v) => {
                         const s = new Set(selected);

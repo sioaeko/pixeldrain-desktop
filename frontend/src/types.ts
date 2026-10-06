@@ -12,6 +12,7 @@ export interface Settings {
   autoResume: boolean;
   keepAwake: boolean;
   confirmDelete: boolean;
+  language: "system" | "ko" | "en";
   theme: "system" | "dark" | "light";
   palette: "nord" | "solarized";
   externalPlayer: string;
@@ -50,6 +51,8 @@ export interface AppState {
   version: string;
   player: string;
   restored: number;
+  lang: "ko" | "en"; // resolved UI language
+  systemLang: "ko" | "en";
   error?: string;
 }
 

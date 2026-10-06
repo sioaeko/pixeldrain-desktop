@@ -6,6 +6,7 @@ import { formatBytes } from "../lib/format";
 import { toast, useApp, useDialog, useToasts, useTransfers } from "../store";
 import type { LinkResult } from "../types";
 import { Modal, Spinner } from "./ui";
+import { tr, plural } from "../lib/i18n";
 
 /** Hosts confirmDialog() and promptDialog(). */
 export function DialogHost() {
@@ -27,7 +28,7 @@ export function DialogHost() {
       footer={
         <>
           <button className="btn" onClick={() => close(null)}>
-            취소
+            {tr("취소", "Cancel")}
           </button>
           <button
             className={clsx("btn", req.danger ? "btn-danger" : "btn-primary")}
@@ -86,7 +87,7 @@ export function Toaster() {
                 {t.action.label}
               </button>
             )}
-            <button className="shrink-0 text-faint hover:text-ink" onClick={() => dismiss(t.id)} aria-label="닫기">
+            <button className="shrink-0 text-faint hover:text-ink" onClick={() => dismiss(t.id)} aria-label={tr("닫기", "Close")}>
               <Icon name="close" className="text-[15px]" />
             </button>
           </div>
@@ -121,8 +122,8 @@ export function LinkDialog() {
       setResult(r);
       if (r.files && !r.errors?.length && !r.invalid?.length) {
         close();
-        toast.info(`${r.files.toLocaleString("ko-KR")}개 파일(${formatBytes(r.bytes)})을 받을 목록에 넣었습니다`, {
-          action: { label: "전송 보기", run: () => setView("transfers") },
+        toast.info(tr(`${r.files.toLocaleString("ko-KR")}개 파일(${formatBytes(r.bytes)})을 받을 목록에 넣었습니다`, `Queued ${plural(r.files, "file")} (${formatBytes(r.bytes)}) for download`), {
+          action: { label: tr("전송 보기", "View transfers"), run: () => setView("transfers") },
         });
       }
     } catch (e) {
@@ -136,24 +137,28 @@ export function LinkDialog() {
     <Modal
       open={open}
       onClose={close}
-      title="링크로 받기"
+      title={tr("링크로 받기", "Download by link")}
       footer={
         <>
           <button className="btn mr-auto" onClick={() => submit(true)} disabled={busy || !text.trim()}>
-            다른 폴더에 받기
+            {tr("다른 폴더에 받기", "Download to…")}
           </button>
           <button className="btn" onClick={close}>
-            닫기
+            {tr("닫기", "Close")}
           </button>
           <button className="btn btn-primary" onClick={() => submit(false)} disabled={busy || !text.trim()}>
-            {busy && <Spinner />} 받기
+            {busy && <Spinner />} {tr("받기", "Download")}
           </button>
         </>
       }
     >
       <p className="mb-3 text-sm text-mute">
-        파일(<span className="text-ink">/u/</span>), 목록(<span className="text-ink">/l/</span>), 공유 폴더(<span className="text-ink">/d/</span>) 링크를 한 줄에 하나씩
-        붙여 넣으세요. 목록과 폴더는 이름 그대로 하위 폴더에 저장됩니다.
+        {tr("파일", "Paste file")} (<span className="text-ink">/u/</span>), {tr("목록", "list")} (<span className="text-ink">/l/</span>),{" "}
+        {tr("공유 폴더", "and shared folder")} (<span className="text-ink">/d/</span>){" "}
+        {tr(
+          "링크를 한 줄에 하나씩 붙여 넣으세요. 목록과 폴더는 이름 그대로 하위 폴더에 저장됩니다.",
+          "links, one per line. Lists and folders are saved into subfolders with their names.",
+        )}
       </p>
       <textarea
         className="field h-36 resize-none py-2 text-sm"
@@ -164,17 +169,17 @@ export function LinkDialog() {
         data-autofocus
       />
       <p className="mt-2 truncate text-xs text-faint" title={dir}>
-        저장 위치: {dir}
+        {tr("저장 위치", "Save to")}: {dir}
       </p>
       {result && (
         <div className="mt-3 space-y-1 rounded border border-line p-3 text-sm">
-          {result.files > 0 && <p>{result.files.toLocaleString("ko-KR")}개 파일을 받을 목록에 넣었습니다.</p>}
+          {result.files > 0 && <p>{tr(`${result.files.toLocaleString("ko-KR")}개 파일을 받을 목록에 넣었습니다.`, `Queued ${plural(result.files, "file")} for download.`)}</p>}
           {result.errors?.map((e) => (
             <p key={e} className="break-all text-danger">
               {e}
             </p>
           ))}
-          {result.invalid?.length ? <p className="break-all text-mute">pixeldrain 링크가 아니어서 건너뜀: {result.invalid.join(", ")}</p> : null}
+          {result.invalid?.length ? <p className="break-all text-mute">{tr("pixeldrain 링크가 아니어서 건너뜀", "Skipped, not pixeldrain links")}: {result.invalid.join(", ")}</p> : null}
         </div>
       )}
     </Modal>
@@ -189,22 +194,27 @@ export function QuitDialog() {
     <Modal
       open={open}
       onClose={() => set(false)}
-      title="전송 중에 끝낼까요?"
+      title={tr("전송 중에 끝낼까요?", "Quit while transferring?")}
       width="max-w-md"
       footer={
         <>
           <button className="btn" onClick={() => set(false)}>
-            계속 전송
+            {tr("계속 전송", "Keep transferring")}
           </button>
           <button className="btn btn-danger" onClick={() => api.forceQuit()}>
-            끝내기
+            {tr("끝내기", "Quit")}
           </button>
         </>
       }
     >
       <p className="text-mute">
-        {s.running + s.queued}개 전송이 남아 있습니다. 목록은 저장되어 다음에 이어서 할 수 있지만,
-        {s.uploads > 0 ? " 진행 중인 업로드는 pixeldrain 특성상 처음부터 다시 올립니다." : " 받던 파일은 받은 곳부터 이어받습니다."}
+        {tr(
+          `${s.running + s.queued}개 전송이 남아 있습니다. 목록은 저장되어 다음에 이어서 할 수 있지만,`,
+          `${plural(s.running + s.queued, "transfer")} left. The list is saved so you can continue next time, but`,
+        )}
+        {s.uploads > 0
+          ? tr(" 진행 중인 업로드는 pixeldrain 특성상 처음부터 다시 올립니다.", " uploads in progress start over, since pixeldrain can't resume them.")
+          : tr(" 받던 파일은 받은 곳부터 이어받습니다.", " downloads resume where they stopped.")}
       </p>
     </Modal>
   );

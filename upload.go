@@ -177,23 +177,23 @@ func (a *App) uploadFile(ctx context.Context, t *job) (bool, error) {
 	m := a.transfers
 	st := a.store.get().Settings
 	if a.client.apiKey() == "" {
-		return false, permanent(errors.New("업로드하려면 로그인하세요"))
+		return false, permanent(newError("업로드하려면 로그인하세요", "Sign in to upload"))
 	}
 
 	fi, err := os.Stat(t.LocalPath)
 	if err != nil {
-		return false, permanent(fmt.Errorf("원본 파일을 열 수 없습니다: %w", err))
+		return false, permanent(fmt.Errorf(L("원본 파일을 열 수 없습니다: %w", "Can't open the source file: %w"), err))
 	}
 	if !fi.Mode().IsRegular() {
-		return false, permanent(errors.New("일반 파일이 아닙니다"))
+		return false, permanent(newError("일반 파일이 아닙니다", "Not a regular file"))
 	}
 	size, mod := fi.Size(), fi.ModTime().UnixMilli()
 	m.mutate(t, func() { t.Size, t.ModTime = size, mod })
 	if limit := a.fileSizeLimit(); limit > 0 && size > limit {
 		if limit == freeFileSizeLimit {
-			return false, permanent(errors.New("무료 계정은 파일당 10 GB까지 올릴 수 있습니다"))
+			return false, permanent(newError("무료 계정은 파일당 10 GB까지 올릴 수 있습니다", "Free accounts can upload up to 10 GB per file"))
 		}
-		return false, permanent(fmt.Errorf("파일이 요금제의 최대 크기(%s)보다 큽니다", formatBytes(limit)))
+		return false, permanent(fmt.Errorf(L("파일이 요금제의 최대 크기(%s)보다 큽니다", "The file is larger than your plan's maximum (%s)"), formatBytes(limit)))
 	}
 
 	// Exact duplicate detection needs the local hash before uploading.
@@ -206,7 +206,7 @@ func (a *App) uploadFile(ctx context.Context, t *job) (bool, error) {
 				if ctx.Err() != nil {
 					return false, ctx.Err()
 				}
-				return false, permanent(fmt.Errorf("파일을 읽지 못했습니다: %w", err))
+				return false, permanent(fmt.Errorf(L("파일을 읽지 못했습니다: %w", "Couldn't read the file: %w"), err))
 			}
 			a.hashes.put(t.LocalPath, size, mod, localHash)
 		}
@@ -230,7 +230,7 @@ func (a *App) uploadFile(ctx context.Context, t *job) (bool, error) {
 	verified := st.VerifyHash && remoteHash != "" && strings.EqualFold(remoteHash, sum)
 	note := ""
 	if st.VerifyHash && remoteHash == "" {
-		note = "서버가 해시를 알려 주지 않아 검증하지 못했습니다"
+		note = L("서버가 해시를 알려 주지 않아 검증하지 못했습니다", "Not verified: the server didn't report a hash")
 	}
 	if sum != "" {
 		a.hashes.put(t.LocalPath, size, mod, sum)
@@ -267,7 +267,7 @@ func (a *App) skipIfExists(ctx context.Context, t *job, size int64, localHash st
 		}
 		n := st.node()
 		if n.Type != "file" {
-			return false, permanent(errors.New("같은 이름의 폴더가 이미 있습니다"))
+			return false, permanent(newError("같은 이름의 폴더가 이미 있습니다", "A folder with the same name already exists"))
 		}
 		same := n.FileSize == size
 		if localHash != "" && n.SHA256 != "" {
@@ -277,7 +277,7 @@ func (a *App) skipIfExists(ctx context.Context, t *job, size int64, localHash st
 			return false, nil // overwrite the different file
 		}
 		m.mutate(t, func() {
-			t.Note = "같은 파일이 이미 있어 건너뛰었습니다"
+			t.Note = L("같은 파일이 이미 있어 건너뛰었습니다", "Skipped: the same file already exists")
 			t.Verified = localHash != "" && strings.EqualFold(localHash, n.SHA256)
 		})
 		return true, nil
@@ -297,7 +297,7 @@ func (a *App) skipIfExists(ctx context.Context, t *job, size int64, localHash st
 	}
 	m.mutate(t, func() {
 		t.RemoteID = id
-		t.Note = "같은 파일이 이미 있어 건너뛰었습니다"
+		t.Note = L("같은 파일이 이미 있어 건너뛰었습니다", "Skipped: the same file already exists")
 		t.Verified = localHash != ""
 	})
 	return true, nil
@@ -309,7 +309,7 @@ func (a *App) uploadAttempt(ctx context.Context, t *job, size int64, verify bool
 	m := a.transfers
 	f, err := os.Open(t.LocalPath)
 	if err != nil {
-		return "", "", "", permanent(fmt.Errorf("원본 파일을 열 수 없습니다: %w", err))
+		return "", "", "", permanent(fmt.Errorf(L("원본 파일을 열 수 없습니다: %w", "Can't open the source file: %w"), err))
 	}
 	defer f.Close()
 
@@ -374,7 +374,7 @@ func (a *App) uploadAttempt(ctx context.Context, t *job, size int64, verify bool
 	}
 	cancel(nil)
 	if body.read != size {
-		return "", "", "", fmt.Errorf("업로드 중에 파일 크기가 바뀌었습니다 (%d / %d 바이트)", body.read, size)
+		return "", "", "", fmt.Errorf(L("업로드 중에 파일 크기가 바뀌었습니다 (%d / %d 바이트)", "The file size changed during upload (%d / %d bytes)"), body.read, size)
 	}
 	if h == nil {
 		return id, remoteHash, "", nil

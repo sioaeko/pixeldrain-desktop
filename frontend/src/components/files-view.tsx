@@ -15,6 +15,7 @@ import { Icon } from "./icon";
 import { Preview, PreviewItem } from "./preview";
 import { EmptyState, Spinner } from "./ui";
 import { LinkButton, SelectionBar, UploadButton, ViewHeader } from "./view-header";
+import { tr, plural } from "../lib/i18n";
 
 const target: UploadTarget = { kind: "files", dir: "" };
 
@@ -27,23 +28,23 @@ export function toPreview(f: FileItem, siteUrl: string): PreviewItem {
 
 /** "N일 뒤 삭제" when pixeldrain has scheduled the file for removal. */
 function expiryNote(f: FileItem): string | undefined {
-  if (f.availability) return "다운로드 제한됨";
+  if (f.availability) return tr("다운로드 제한됨", "Download restricted");
   if (!f.expiresAt) return undefined;
   const t = new Date(f.expiresAt).getTime();
   if (!Number.isFinite(t) || t < Date.UTC(2001, 0)) return undefined;
   const days = Math.ceil((t - Date.now()) / 86_400_000);
-  return days <= 0 ? "곧 삭제됨" : `${days}일 뒤 삭제`;
+  return days <= 0 ? tr("곧 삭제됨", "Deleted soon") : tr(`${days}일 뒤 삭제`, `Deleted in ${days} ${days === 1 ? "day" : "days"}`);
 }
 
 export function fileColumns(): Column<FileItem>[] {
   return [
     {
-      key: "name", header: "이름", width: "minmax(0,1fr)", sortable: true,
+      key: "name", header: tr("이름", "Name"), width: "minmax(0,1fr)", sortable: true,
       render: (f) => <NameCell name={f.name} sub={expiryNote(f)} thumb={<FileThumb name={f.name} mime={f.mimeType} id={f.id} />} />,
     },
-    { key: "size", header: "크기", width: "6rem", align: "right", sortable: true, render: (f) => <span className="tnum text-mute">{formatBytes(f.size)}</span> },
-    { key: "views", header: "조회", width: "4.5rem", align: "right", sortable: true, hideBelow: 720, render: (f) => <span className="tnum text-mute">{formatCount(f.views)}</span> },
-    { key: "uploaded", header: "올린 날짜", width: "7.5rem", align: "right", sortable: true, hideBelow: 520, render: (f) => <span className="tnum text-mute">{formatDate(f.uploaded)}</span> },
+    { key: "size", header: tr("크기", "Size"), width: "6rem", align: "right", sortable: true, render: (f) => <span className="tnum text-mute">{formatBytes(f.size)}</span> },
+    { key: "views", header: tr("조회", "Views"), width: "4.5rem", align: "right", sortable: true, hideBelow: 720, render: (f) => <span className="tnum text-mute">{formatCount(f.views)}</span> },
+    { key: "uploaded", header: tr("올린 날짜", "Uploaded"), width: "7.5rem", align: "right", sortable: true, hideBelow: 520, render: (f) => <span className="tnum text-mute">{formatDate(f.uploaded)}</span> },
   ];
 }
 
@@ -69,29 +70,29 @@ export function fileMenu(
   const links = items.map((f) => fileLinkable(siteUrl, f));
   const one = items.length === 1;
   return [
-    ...(one && h.preview ? [{ label: "미리 보기", icon: "visibility", hint: "Enter", onSelect: h.preview }] : []),
-    { label: one ? "링크 복사" : `링크 ${items.length}개 복사`, icon: "content_copy", hint: "Ctrl+C", onSelect: () => copyLinks(links) },
-    { label: "직접 다운로드 링크 복사", icon: "link", onSelect: () => copyLinks(links, "direct") },
-    { label: "마크다운으로 복사", icon: "data_object", onSelect: () => copyLinks(links, "markdown") },
-    ...(one ? [{ label: "브라우저에서 열기", icon: "open_in_new", onSelect: () => api.openURL(links[0].url) }] : []),
+    ...(one && h.preview ? [{ label: tr("미리 보기", "Preview"), icon: "visibility", hint: "Enter", onSelect: h.preview }] : []),
+    { label: one ? tr("링크 복사", "Copy link") : tr(`링크 ${items.length}개 복사`, `Copy ${items.length} links`), icon: "content_copy", hint: "Ctrl+C", onSelect: () => copyLinks(links) },
+    { label: tr("직접 다운로드 링크 복사", "Copy direct download link"), icon: "link", onSelect: () => copyLinks(links, "direct") },
+    { label: tr("마크다운으로 복사", "Copy as Markdown"), icon: "data_object", onSelect: () => copyLinks(links, "markdown") },
+    ...(one ? [{ label: tr("브라우저에서 열기", "Open in browser"), icon: "open_in_new", onSelect: () => api.openURL(links[0].url) }] : []),
     null,
-    { label: "받기", icon: "download", onSelect: () => h.download(false) },
-    { label: "다른 폴더에 받기", icon: "drive_folder_upload", onSelect: () => h.download(true) },
-    ...(h.makeList ? [{ label: "목록 만들기", icon: "playlist_add", onSelect: h.makeList }] : []),
-    ...(h.remove ? [null, { label: "삭제", icon: "delete", hint: "Del", danger: true, onSelect: h.remove }] : []),
+    { label: tr("받기", "Download"), icon: "download", onSelect: () => h.download(false) },
+    { label: tr("다른 폴더에 받기", "Download to…"), icon: "drive_folder_upload", onSelect: () => h.download(true) },
+    ...(h.makeList ? [{ label: tr("목록 만들기", "Create list"), icon: "playlist_add", onSelect: h.makeList }] : []),
+    ...(h.remove ? [null, { label: tr("삭제", "Delete"), icon: "delete", hint: "Del", danger: true, onSelect: h.remove }] : []),
   ];
 }
 
 type KindFilter = "all" | "image" | "video" | "audio" | "doc" | "archive" | "other";
 
-const kindFilters: { value: KindFilter; label: string }[] = [
-  { value: "all", label: "전체" },
-  { value: "image", label: "이미지" },
-  { value: "video", label: "동영상" },
-  { value: "audio", label: "오디오" },
-  { value: "doc", label: "문서" },
-  { value: "archive", label: "압축" },
-  { value: "other", label: "기타" },
+const kindFilters = (): { value: KindFilter; label: string }[] => [
+  { value: "all", label: tr("전체", "All") },
+  { value: "image", label: tr("이미지", "Images") },
+  { value: "video", label: tr("동영상", "Videos") },
+  { value: "audio", label: tr("오디오", "Audio") },
+  { value: "doc", label: tr("문서", "Documents") },
+  { value: "archive", label: tr("압축", "Archives") },
+  { value: "other", label: tr("기타", "Other") },
 ];
 
 function filterKind(k: FileKind): KindFilter {
@@ -159,16 +160,16 @@ export function FilesView() {
     if (!items.length) return;
     if (app.settings.confirmDelete) {
       const ok = await confirmDialog({
-        title: items.length === 1 ? `"${items[0].name}"을(를) 삭제할까요?` : `파일 ${items.length}개를 삭제할까요?`,
-        body: "pixeldrain에서 영구히 삭제되며 공유한 링크도 더 이상 열리지 않습니다.",
-        confirmLabel: "삭제",
+        title: items.length === 1 ? tr(`"${items[0].name}"을(를) 삭제할까요?`, `Delete "${items[0].name}"?`) : tr(`파일 ${items.length}개를 삭제할까요?`, `Delete ${items.length} files?`),
+        body: tr("pixeldrain에서 영구히 삭제되며 공유한 링크도 더 이상 열리지 않습니다.", "They are permanently deleted from pixeldrain and shared links stop working."),
+        confirmLabel: tr("삭제", "Delete"),
         danger: true,
       });
       if (!ok) return;
     }
     try {
       const n = await api.deleteFiles(items.map((f) => f.id));
-      toast.success(`파일 ${n}개를 삭제했습니다`);
+      toast.success(tr(`파일 ${n}개를 삭제했습니다`, `Deleted ${plural(n, "file")}`));
     } catch (e) {
       toast.error(errMsg(e));
     }
@@ -178,10 +179,10 @@ export function FilesView() {
 
   const makeList = async (items: FileItem[]) => {
     const title = await promptDialog({
-      title: "목록 만들기",
-      body: `파일 ${items.length}개를 하나의 링크로 묶습니다.`,
-      confirmLabel: "만들기",
-      placeholder: "목록 이름",
+      title: tr("목록 만들기", "Create list"),
+      body: tr(`파일 ${items.length}개를 하나의 링크로 묶습니다.`, `Groups ${plural(items.length, "file")} under one link.`),
+      confirmLabel: tr("만들기", "Create"),
+      placeholder: tr("목록 이름", "List name"),
       allowEmpty: true,
     });
     if (title === null) return;
@@ -189,7 +190,7 @@ export function FilesView() {
       const id = await api.createList(title, items.map((f) => f.id));
       const url = `${app.siteUrl}/l/${id}`;
       await api.copyText(url);
-      toast.success("목록을 만들고 링크를 복사했습니다", { action: { label: "열기", run: () => api.openURL(url) } });
+      toast.success(tr("목록을 만들고 링크를 복사했습니다", "List created and link copied"), { action: { label: tr("열기", "Open"), run: () => api.openURL(url) } });
     } catch (e) {
       toast.error(errMsg(e));
     }
@@ -215,8 +216,8 @@ export function FilesView() {
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <ViewHeader
-        title="내 파일"
-        sub={files ? `파일 ${formatCount(files.length)}개, ${formatBytes(totalSize)}` : undefined}
+        title={tr("내 파일", "My Files")}
+        sub={files ? tr(`파일 ${formatCount(files.length)}개, ${formatBytes(totalSize)}`, `${plural(files.length, "file")}, ${formatBytes(totalSize)}`) : undefined}
         query={query}
         onQuery={setQuery}
         onRefresh={load}
@@ -226,8 +227,8 @@ export function FilesView() {
         <UploadButton target={target} />
       </ViewHeader>
       {files && files.length > 0 && (
-        <div role="tablist" aria-label="파일 종류" className="flex shrink-0 gap-1 overflow-x-auto border-b border-line px-4 py-1.5">
-          {kindFilters
+        <div role="tablist" aria-label={tr("파일 종류", "File type")} className="flex shrink-0 gap-1 overflow-x-auto border-b border-line px-4 py-1.5">
+          {kindFilters()
             .filter((k) => k.value === "all" || counts[k.value] > 0)
             .map((k) => (
               <button
@@ -251,17 +252,17 @@ export function FilesView() {
       )}
       {selectedFiles.length > 0 && (
         <SelectionBar count={selectedFiles.length} size={selectedSize} onClear={() => setSelected(new Set())}>
-          <button className="btn" onClick={() => links(selectedFiles)} title="링크 복사 (Ctrl+C)">
-            <Icon name="content_copy" /> 링크 복사
+          <button className="btn" onClick={() => links(selectedFiles)} title={tr("링크 복사 (Ctrl+C)", "Copy link (Ctrl+C)")}>
+            <Icon name="content_copy" />{tr(" 링크 복사", " Copy link")}
           </button>
           <button className="btn" onClick={() => download(selectedFiles)}>
-            <Icon name="download" /> 받기
+            <Icon name="download" />{tr(" 받기", " Download")}
           </button>
           <button className="btn" onClick={() => makeList(selectedFiles)}>
-            <Icon name="playlist_add" /> 목록 만들기
+            <Icon name="playlist_add" />{tr(" 목록 만들기", " Create list")}
           </button>
-          <button className="btn btn-danger" onClick={() => remove(selectedFiles)} title="삭제 (Del)">
-            <Icon name="delete" /> 삭제
+          <button className="btn btn-danger" onClick={() => remove(selectedFiles)} title={tr("삭제 (Del)", "Delete (Del)")}>
+            <Icon name="delete" />{tr(" 삭제", " Delete")}
           </button>
         </SelectionBar>
       )}
@@ -270,14 +271,14 @@ export function FilesView() {
           <Spinner className="h-5 w-5 text-mute" />
         </div>
       ) : error && files === null ? (
-        <EmptyState icon={<Icon name="cloud_off" />} title="파일 목록을 불러오지 못했습니다" body={error}>
+        <EmptyState icon={<Icon name="cloud_off" />} title={tr("파일 목록을 불러오지 못했습니다", "Couldn't load your files")} body={error}>
           <button className="btn" onClick={load}>
-            다시 시도
+            {tr("다시 시도", "Retry")}
           </button>
         </EmptyState>
       ) : (
         <DataTable
-          label="내 파일"
+          label={tr("내 파일", "My Files")}
           rows={rows}
           rowKey={(f) => f.id}
           columns={fileColumns()}
@@ -300,27 +301,27 @@ export function FilesView() {
           }
           rowActions={(f) => (
             <>
-              <button className="icon-btn" title="미리 보기 (Space)" aria-label="미리 보기" onClick={() => open(f)}>
+              <button className="icon-btn" title={tr("미리 보기 (Space)", "Preview (Space)")} aria-label={tr("미리 보기", "Preview")} onClick={() => open(f)}>
                 <Icon name="visibility" />
               </button>
-              <button className="icon-btn" title="링크 복사" aria-label="링크 복사" onClick={() => links([f])}>
+              <button className="icon-btn" title={tr("링크 복사", "Copy link")} aria-label={tr("링크 복사", "Copy link")} onClick={() => links([f])}>
                 <Icon name="content_copy" />
               </button>
-              <button className="icon-btn" title="받기" aria-label="받기" onClick={() => download([f])}>
+              <button className="icon-btn" title={tr("받기", "Download")} aria-label={tr("받기", "Download")} onClick={() => download([f])}>
                 <Icon name="download" />
               </button>
             </>
           )}
           empty={
             query || kind !== "all" ? (
-              <EmptyState icon={<Icon name="search_off" />} title="조건에 맞는 파일이 없습니다" />
+              <EmptyState icon={<Icon name="search_off" />} title={tr("조건에 맞는 파일이 없습니다", "No matching files")} />
             ) : (
-              <EmptyState icon={<Icon name="cloud_upload" />} title="아직 올린 파일이 없습니다" body="파일이나 폴더를 이 창에 끌어 놓으면 바로 올라갑니다.">
+              <EmptyState icon={<Icon name="cloud_upload" />} title={tr("아직 올린 파일이 없습니다", "No files uploaded yet")} body={tr("파일이나 폴더를 이 창에 끌어 놓으면 바로 올라갑니다.", "Drop files or folders onto this window to upload them.")}>
                 <button className="btn" onClick={() => pickUpload(target, true)}>
-                  폴더 선택
+                  {tr("폴더 선택", "Choose folder")}
                 </button>
                 <button className="btn btn-primary" onClick={() => pickUpload(target, false)}>
-                  파일 선택
+                  {tr("파일 선택", "Choose files")}
                 </button>
               </EmptyState>
             )

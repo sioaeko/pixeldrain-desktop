@@ -14,6 +14,7 @@ import { fileColumns, fileMenu, fileSortValue, toPreview } from "./files-view";
 import { Preview } from "./preview";
 import { EmptyState, Spinner } from "./ui";
 import { ViewHeader } from "./view-header";
+import { tr, plural } from "../lib/i18n";
 
 export function ListsView() {
   const siteUrl = useApp((s) => s.app!.siteUrl);
@@ -83,8 +84,8 @@ export function ListsView() {
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <ViewHeader
-        title="목록"
-        sub={lists ? `목록 ${formatCount(lists.length)}개` : undefined}
+        title={tr("목록", "Lists")}
+        sub={lists ? tr(`목록 ${formatCount(lists.length)}개`, plural(lists.length, "list")) : undefined}
         query={query}
         onQuery={setQuery}
         onRefresh={load}
@@ -95,20 +96,20 @@ export function ListsView() {
           <Spinner className="h-5 w-5 text-mute" />
         </div>
       ) : error && lists === null ? (
-        <EmptyState icon={<Icon name="list" />} title="목록을 불러오지 못했습니다" body={error}>
+        <EmptyState icon={<Icon name="list" />} title={tr("목록을 불러오지 못했습니다", "Couldn't load your lists")} body={error}>
           <button className="btn" onClick={load}>
-            다시 시도
+            {tr("다시 시도", "Retry")}
           </button>
         </EmptyState>
       ) : lists && lists.length === 0 ? (
         <EmptyState
           icon={<Icon name="list" />}
-          title="아직 만든 목록이 없습니다"
-          body="내 파일에서 여러 파일을 고른 뒤 목록 만들기를 누르면 하나의 링크로 공유할 수 있습니다. 폴더를 올리면 목록이 자동으로 만들어집니다."
+          title={tr("아직 만든 목록이 없습니다", "No lists yet")}
+          body={tr("내 파일에서 여러 파일을 고른 뒤 목록 만들기를 누르면 하나의 링크로 공유할 수 있습니다. 폴더를 올리면 목록이 자동으로 만들어집니다.", "Select files in My Files and choose Create list to share them with one link. Uploading a folder creates a list automatically.")}
         />
       ) : (
         <div className="flex min-h-0 flex-1">
-          <nav className="w-72 shrink-0 overflow-y-auto border-r border-line py-2" aria-label="목록">
+          <nav className="w-72 shrink-0 overflow-y-auto border-r border-line py-2" aria-label={tr("목록", "Lists")}>
             {shown.map((l) => (
               <button
                 key={l.id}
@@ -119,9 +120,9 @@ export function ListsView() {
                   active === l.id ? "bg-raised" : "hover:bg-raised/50",
                 )}
               >
-                <span className="block truncate">{l.title || "제목 없음"}</span>
+                <span className="block truncate">{l.title || tr("제목 없음", "Untitled")}</span>
                 <span className="block text-xs text-faint">
-                  파일 {formatCount(l.fileCount)}개, {formatDate(l.created)}
+                  {tr(`파일 ${formatCount(l.fileCount)}개`, plural(l.fileCount, "file"))}, {formatDate(l.created)}
                 </span>
               </button>
             ))}
@@ -130,22 +131,22 @@ export function ListsView() {
             {detail && (
               <div className="flex h-14 shrink-0 items-center gap-2 border-b border-line px-4">
                 <div className="min-w-0 flex-1">
-                  <div className="truncate font-medium">{detail.title || "제목 없음"}</div>
+                  <div className="truncate font-medium">{detail.title || tr("제목 없음", "Untitled")}</div>
                   <div className="truncate text-sm text-mute">
-                    파일 {formatCount(detail.files.length)}개, {formatBytes(total)}
+                    {tr(`파일 ${formatCount(detail.files.length)}개`, plural(detail.files.length, "file"))}, {formatBytes(total)}
                   </div>
                 </div>
                 <button className="btn" onClick={() => copyLinks([listUrl])}>
-                  <Icon name="content_copy" className="text-[18px]" /> 목록 링크 복사
+                  <Icon name="content_copy" className="text-[18px]" />{tr(" 목록 링크 복사", " Copy list link")}
                 </button>
-                <button className="icon-btn" onClick={() => api.openURL(listUrl)} title="브라우저에서 열기" aria-label="브라우저에서 열기">
+                <button className="icon-btn" onClick={() => api.openURL(listUrl)} title={tr("브라우저에서 열기", "Open in browser")} aria-label={tr("브라우저에서 열기", "Open in browser")}>
                   <Icon name="open_in_new" className="text-[18px]" />
                 </button>
                 <button
                   className="btn btn-primary"
                   onClick={() => runDownload(api.downloadFiles(selectedFiles.length ? selectedFiles : detail.files, detail.title || detail.id, false))}
                 >
-                  <Icon name="download" className="text-[18px]" /> {selectedFiles.length ? `${selectedFiles.length}개 받기` : "모두 받기"}
+                  <Icon name="download" className="text-[18px]" /> {selectedFiles.length ? tr(`${selectedFiles.length}개 받기`, `Download ${selectedFiles.length}`) : tr("모두 받기", "Download all")}
                 </button>
               </div>
             )}
@@ -154,7 +155,7 @@ export function ListsView() {
                 <Spinner className="h-5 w-5 text-mute" />
               </div>
             )}
-            {detailErr && <EmptyState icon={<Icon name="list" />} title="목록을 열지 못했습니다" body={detailErr} />}
+            {detailErr && <EmptyState icon={<Icon name="list" />} title={tr("목록을 열지 못했습니다", "Couldn't open the list")} body={detailErr} />}
             {detail && (
               <DataTable
                 label={detail.title}
@@ -180,18 +181,18 @@ export function ListsView() {
                 }
                 rowActions={(f) => (
                   <>
-                    <button className="icon-btn" title="미리 보기 (Space)" aria-label="미리 보기" onClick={() => open(f)}>
+                    <button className="icon-btn" title={tr("미리 보기 (Space)", "Preview (Space)")} aria-label={tr("미리 보기", "Preview")} onClick={() => open(f)}>
                       <Icon name="visibility" />
                     </button>
-                    <button className="icon-btn" title="링크 복사" aria-label="링크 복사" onClick={() => copyLinks([fileLinkable(siteUrl, f)])}>
+                    <button className="icon-btn" title={tr("링크 복사", "Copy link")} aria-label={tr("링크 복사", "Copy link")} onClick={() => copyLinks([fileLinkable(siteUrl, f)])}>
                       <Icon name="content_copy" />
                     </button>
-                    <button className="icon-btn" title="받기" aria-label="받기" onClick={() => download([f])}>
+                    <button className="icon-btn" title={tr("받기", "Download")} aria-label={tr("받기", "Download")} onClick={() => download([f])}>
                       <Icon name="download" />
                     </button>
                   </>
                 )}
-                empty={<EmptyState icon={<Icon name="list" />} title="이 목록은 비어 있습니다" body="목록의 파일이 모두 삭제되었습니다." />}
+                empty={<EmptyState icon={<Icon name="list" />} title={tr("이 목록은 비어 있습니다", "This list is empty")} body={tr("목록의 파일이 모두 삭제되었습니다.", "All files in the list have been deleted.")} />}
               />
             )}
           </section>

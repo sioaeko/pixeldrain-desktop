@@ -13,6 +13,7 @@ import { PixelMark } from "./login";
 import { ShortcutsDialog, useGlobalShortcuts, useHelp } from "./shortcuts";
 import { TransferSummaryBar, TransfersView } from "./transfers-view";
 import { Meter } from "./ui";
+import { tr, plural } from "../lib/i18n";
 
 function NavItem({ view, icon, label, badge, tone }: { view: View; icon: React.ReactNode; label: string; badge?: number; tone?: "error" }) {
   const current = useApp((s) => s.view);
@@ -36,9 +37,9 @@ function NavItem({ view, icon, label, badge, tone }: { view: View; icon: React.R
 function Quota({ label, used, limit }: { label: string; used: number; limit: number }) {
   return (
     <div>
-      <div className="mb-1 flex justify-between text-xs">
-        <span className="text-mute">{label}</span>
-        <span className="text-faint">
+      <div className="mb-1 flex justify-between gap-2 text-xs">
+        <span className="truncate text-mute">{label}</span>
+        <span className="shrink-0 text-faint">
           {formatBytes(used)}
           {limit > 0 && ` / ${formatBytes(limit, 0)}`}
         </span>
@@ -61,40 +62,40 @@ function Sidebar({ onLogin, onHelp }: { onLogin: () => void; onHelp: () => void 
         <PixelMark size={4} />
         <span className="font-semibold">pixeldrain</span>
       </div>
-      <nav className="space-y-1 px-3" aria-label="메뉴">
+      <nav className="space-y-1 px-3" aria-label={tr("메뉴", "Menu")}>
         {app.loggedIn && (
           <>
-            <NavItem view="files" icon={<Icon name="file_copy" />} label="내 파일" />
-            <NavItem view="lists" icon={<Icon name="list" />} label="목록" />
-            {acc?.fsAccess && <NavItem view="fs" icon={<Icon name="storage" />} label="파일시스템" />}
+            <NavItem view="files" icon={<Icon name="file_copy" />} label={tr("내 파일", "My Files")} />
+            <NavItem view="lists" icon={<Icon name="list" />} label={tr("목록", "Lists")} />
+            {acc?.fsAccess && <NavItem view="fs" icon={<Icon name="storage" />} label={tr("파일시스템", "Filesystem")} />}
           </>
         )}
-        <NavItem view="transfers" icon={<Icon name="swap_vert" />} label="전송" badge={s.failed || active} tone={s.failed ? "error" : undefined} />
+        <NavItem view="transfers" icon={<Icon name="swap_vert" />} label={tr("전송", "Transfers")} badge={s.failed || active} tone={s.failed ? "error" : undefined} />
       </nav>
 
       <div className="mt-auto space-y-4 px-5 pb-4">
         {acc && (
           <div className="space-y-3">
-            <Quota label="내 파일" used={acc.storageUsed} limit={acc.storageLimit} />
-            {acc.fsAccess && <Quota label="파일시스템" used={acc.fsUsed} limit={acc.fsLimit} />}
-            {acc.transferCap > 0 && <Quota label="이번 달 전송" used={acc.transferUsed} limit={acc.transferCap} />}
+            <Quota label={tr("내 파일", "My Files")} used={acc.storageUsed} limit={acc.storageLimit} />
+            {acc.fsAccess && <Quota label={tr("파일시스템", "Filesystem")} used={acc.fsUsed} limit={acc.fsLimit} />}
+            {acc.transferCap > 0 && <Quota label={tr("이번 달 전송", "Monthly transfer")} used={acc.transferUsed} limit={acc.transferCap} />}
           </div>
         )}
         <div className="flex items-center gap-2 border-t border-line pt-3">
           {acc ? (
             <div className="min-w-0 flex-1">
               <div className="truncate text-sm font-medium">{acc.username}</div>
-              <div className="truncate text-xs text-faint">{acc.plan || "무료"}</div>
+              <div className="truncate text-xs text-faint">{acc.plan || tr("무료", "Free")}</div>
             </div>
           ) : (
             <button className="btn -ml-3 flex-1" onClick={onLogin}>
-              <Icon name="login" className="text-[18px]" /> 로그인
+              <Icon name="login" className="text-[18px]" />{tr(" 로그인", " Sign in")}
             </button>
           )}
-          <button className="icon-btn" onClick={onHelp} aria-label="단축키" title="단축키 (?)">
+          <button className="icon-btn" onClick={onHelp} aria-label={tr("단축키", "Keyboard shortcuts")} title={tr("단축키 (?)", "Keyboard shortcuts (?)")}>
             <Icon name="keyboard" />
           </button>
-          <button className="icon-btn" onClick={() => openSettings(true)} aria-label="설정" title="설정 (Ctrl+,)">
+          <button className="icon-btn" onClick={() => openSettings(true)} aria-label={tr("설정", "Settings")} title={tr("설정 (Ctrl+,)", "Settings (Ctrl+,)")}>
             <Icon name="settings" />
           </button>
         </div>
@@ -111,9 +112,14 @@ function RestoredBanner() {
   if (!restored || !paused || dismissed) return null;
   return (
     <div className="flex h-11 shrink-0 items-center gap-3 border-b border-line bg-info/10 px-5 text-sm">
-      <span className="flex-1">지난번에 끝나지 않은 전송 {paused.toLocaleString("ko-KR")}개를 일시정지 상태로 불러왔습니다.</span>
+      <span className="flex-1">
+        {tr(
+          `지난번에 끝나지 않은 전송 ${paused.toLocaleString("ko-KR")}개를 일시정지 상태로 불러왔습니다.`,
+          `Restored ${plural(paused, "unfinished transfer")} from last time, paused.`,
+        )}
+      </span>
       <button className="btn" onClick={() => setDismissed(true)}>
-        나중에
+        {tr("나중에", "Later")}
       </button>
       <button
         className="btn btn-primary"
@@ -122,7 +128,7 @@ function RestoredBanner() {
           setDismissed(true);
         }}
       >
-        모두 이어서 하기
+        {tr("모두 이어서 하기", "Resume all")}
       </button>
     </div>
   );
@@ -170,18 +176,19 @@ function DropOverlay() {
 
   const listForFolders = useApp((s) => s.app?.settings.listForFolders ?? false);
   if (!over) return null;
-  const where = view === "fs" ? fsDir.replace(/^\/me/, "파일시스템") || "파일시스템" : "내 파일";
+  const fsName = tr("파일시스템", "Filesystem");
+  const where = view === "fs" ? fsDir.replace(/^\/me/, fsName) || fsName : tr("내 파일", "My Files");
   return (
     <div className="pointer-events-none fixed inset-0 z-[55] flex items-center justify-center bg-bg/80">
       <div className="flex flex-col items-center rounded-lg border-2 border-dashed border-hl px-16 py-12 text-center">
         <Icon name="cloud_upload" className="text-[40px] text-hl" />
-        <p className="mt-3 text-md font-medium">놓으면 {where}에 올립니다</p>
+        <p className="mt-3 text-md font-medium">{tr(`놓으면 ${where}에 올립니다`, `Drop to upload to ${where}`)}</p>
         <p className="mt-1 text-sm text-mute">
           {view === "fs"
-            ? "폴더는 하위 폴더 구조를 그대로 유지합니다."
+            ? tr("폴더는 하위 폴더 구조를 그대로 유지합니다.", "Folders keep their subfolder structure.")
             : listForFolders
-              ? "폴더는 안의 파일을 모두 올린 뒤 폴더 이름의 목록으로 묶습니다."
-              : "폴더는 안의 파일까지 모두 올라갑니다."}
+              ? tr("폴더는 안의 파일을 모두 올린 뒤 폴더 이름의 목록으로 묶습니다.", "Folders are uploaded, then grouped into a list named after the folder.")
+              : tr("폴더는 안의 파일까지 모두 올라갑니다.", "Everything inside folders is uploaded.")}
         </p>
       </div>
     </div>

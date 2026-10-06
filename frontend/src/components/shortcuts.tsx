@@ -4,34 +4,35 @@ import { pasteUpload, pickUpload } from "../lib/actions";
 import { useApp, View } from "../store";
 import type { UploadTarget } from "../types";
 import { Modal } from "./ui";
+import { tr } from "../lib/i18n";
 
-const groups: { title: string; keys: [string, string][] }[] = [
+const groups = (): { title: string; keys: [string, string][] }[] => [
   {
-    title: "어디서나",
+    title: tr("어디서나", "Anywhere"),
     keys: [
-      ["Ctrl+1 ~ 4", "내 파일, 목록, 파일시스템, 전송으로 이동"],
-      ["Ctrl+U", "파일 올리기"],
-      ["Ctrl+Shift+U", "폴더 올리기"],
-      ["Ctrl+V", "탐색기에서 복사한 파일 올리기, 복사한 링크 받기"],
-      ["Ctrl+L", "링크로 받기"],
-      ["Ctrl+F", "이름으로 찾기"],
-      ["F5", "새로 고침"],
-      ["Ctrl+,", "설정"],
-      ["?", "이 도움말"],
+      ["Ctrl+1 ~ 4", tr("내 파일, 목록, 파일시스템, 전송으로 이동", "Go to My Files, Lists, Filesystem, Transfers")],
+      ["Ctrl+U", tr("파일 올리기", "Upload files")],
+      ["Ctrl+Shift+U", tr("폴더 올리기", "Upload a folder")],
+      ["Ctrl+V", tr("탐색기에서 복사한 파일 올리기, 복사한 링크 받기", "Upload files copied in Explorer, download copied links")],
+      ["Ctrl+L", tr("링크로 받기", "Download by link")],
+      ["Ctrl+F", tr("이름으로 찾기", "Search by name")],
+      ["F5", tr("새로 고침", "Refresh")],
+      ["Ctrl+,", tr("설정", "Settings")],
+      ["?", tr("이 도움말", "This help")],
     ],
   },
   {
-    title: "파일 목록",
+    title: tr("파일 목록", "File list"),
     keys: [
-      ["Enter, Space", "미리 보기 또는 폴더 열기"],
-      ["← →", "미리 보기에서 이전, 다음 파일"],
-      ["Ctrl+C", "선택한 파일 링크 복사"],
-      ["Ctrl+A", "모두 선택"],
-      ["Shift, Ctrl+클릭", "여러 개 선택"],
-      ["Del", "삭제"],
-      ["F2", "이름 바꾸기 (파일시스템)"],
-      ["Backspace", "상위 폴더 (파일시스템)"],
-      ["오른쪽 클릭", "메뉴"],
+      ["Enter, Space", tr("미리 보기 또는 폴더 열기", "Preview or open folder")],
+      ["← →", tr("미리 보기에서 이전, 다음 파일", "Previous / next file in preview")],
+      ["Ctrl+C", tr("선택한 파일 링크 복사", "Copy links of selected files")],
+      ["Ctrl+A", tr("모두 선택", "Select all")],
+      [tr("Shift, Ctrl+클릭", "Shift, Ctrl+click"), tr("여러 개 선택", "Select multiple")],
+      ["Del", tr("삭제", "Delete")],
+      ["F2", tr("이름 바꾸기 (파일시스템)", "Rename (Filesystem)")],
+      ["Backspace", tr("상위 폴더 (파일시스템)", "Parent folder (Filesystem)")],
+      [tr("오른쪽 클릭", "Right-click"), tr("메뉴", "Menu")],
     ],
   },
 ];
@@ -67,7 +68,7 @@ export function useGlobalShortcuts(onHelp: () => void) {
         e.preventDefault();
         st.openLinks();
       } else if (ctrl && e.key.toLowerCase() === "f") {
-        const search = document.querySelector<HTMLInputElement>('input[aria-label="이름으로 찾기"]');
+        const search = document.querySelector<HTMLInputElement>(`input[aria-label="${tr("이름으로 찾기", "Search by name")}"]`);
         if (search) {
           e.preventDefault();
           search.focus();
@@ -75,7 +76,7 @@ export function useGlobalShortcuts(onHelp: () => void) {
         }
       } else if (e.key === "F5") {
         e.preventDefault();
-        document.querySelector<HTMLButtonElement>('button[aria-label="새로 고침"]')?.click();
+        document.querySelector<HTMLButtonElement>(`button[aria-label="${tr("새로 고침", "Refresh")}"]`)?.click();
       } else if (ctrl && e.key === ",") {
         e.preventDefault();
         st.openSettings(true);
@@ -99,9 +100,9 @@ export function useGlobalShortcuts(onHelp: () => void) {
 
 export function ShortcutsDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
   return (
-    <Modal open={open} onClose={onClose} title="단축키" width="max-w-2xl">
+    <Modal open={open} onClose={onClose} title={tr("단축키", "Keyboard shortcuts")} width="max-w-2xl">
       <div className="grid gap-x-8 gap-y-5 sm:grid-cols-2">
-        {groups.map((g) => (
+        {groups().map((g) => (
           <section key={g.title}>
             <h3 className="mb-2 text-sm font-semibold text-mute">{g.title}</h3>
             <dl className="space-y-1.5">

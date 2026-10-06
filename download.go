@@ -82,7 +82,7 @@ func (a *App) downloadFile(ctx context.Context, t *job) (bool, error) {
 	st := a.store.get().Settings
 	verify := st.VerifyHash && t.Hash != ""
 	if err := os.MkdirAll(filepath.Dir(t.LocalPath), 0o755); err != nil {
-		return false, permanent(fmt.Errorf("저장 폴더를 만들 수 없습니다: %w", err))
+		return false, permanent(fmt.Errorf(L("저장 폴더를 만들 수 없습니다: %w", "Can't create the download folder: %w"), err))
 	}
 
 	// A complete copy from an earlier run is kept instead of downloaded again.
@@ -99,7 +99,9 @@ func (a *App) downloadFile(ctx context.Context, t *job) (bool, error) {
 				same = err == nil && strings.EqualFold(sum, t.Hash)
 			}
 			if same {
-				m.mutate(t, func() { t.Note, t.Verified = "이미 받은 파일이라 건너뛰었습니다", verify })
+				m.mutate(t, func() {
+					t.Note, t.Verified = L("이미 받은 파일이라 건너뛰었습니다", "Skipped: already downloaded"), verify
+				})
 				return true, nil
 			}
 		}
@@ -112,7 +114,7 @@ func (a *App) downloadFile(ctx context.Context, t *job) (bool, error) {
 	part := t.LocalPath + partSuffix
 	if need := t.Size - partSize(t.LocalPath); t.Size > 0 && need > 0 {
 		if free, err := freeSpace(filepath.Dir(t.LocalPath)); err == nil && free < uint64(need)+diskMargin {
-			return false, permanent(fmt.Errorf("저장할 드라이브에 공간이 부족합니다 (%s 필요, %s 남음)", formatBytes(need), formatBytes(int64(free))))
+			return false, permanent(fmt.Errorf(L("저장할 드라이브에 공간이 부족합니다 (%s 필요, %s 남음)", "Not enough space on the target drive (%s needed, %s free)"), formatBytes(need), formatBytes(int64(free))))
 		}
 	}
 	err := m.withRetries(ctx, t, st.Retries+1, func(int) error {
@@ -127,7 +129,7 @@ func (a *App) downloadFile(ctx context.Context, t *job) (bool, error) {
 		final = uniquePath(final)
 	}
 	if err := os.Rename(part, final); err != nil {
-		return false, permanent(fmt.Errorf("파일 이름을 바꾸지 못했습니다: %w", err))
+		return false, permanent(fmt.Errorf(L("파일 이름을 바꾸지 못했습니다: %w", "Couldn't rename the file: %w"), err))
 	}
 	m.mutate(t, func() { t.LocalPath, t.Verified = final, verify })
 	return false, nil
@@ -193,7 +195,7 @@ func (a *App) downloadAttempt(ctx context.Context, t *job, part string, verify b
 	}
 	out, err := os.OpenFile(part, flags, 0o644)
 	if err != nil {
-		return permanent(fmt.Errorf("임시 파일을 만들 수 없습니다: %w", err))
+		return permanent(fmt.Errorf(L("임시 파일을 만들 수 없습니다: %w", "Can't create a temporary file: %w"), err))
 	}
 	if _, err := out.Seek(off, io.SeekStart); err != nil {
 		out.Close()
@@ -250,7 +252,7 @@ func (a *App) finishDownload(t *job, part string, h hash.Hash) error {
 		if fi.Size() > t.Size {
 			os.Remove(part)
 		}
-		return fmt.Errorf("받은 크기가 다릅니다 (%d / %d 바이트)", fi.Size(), t.Size)
+		return fmt.Errorf(L("받은 크기가 다릅니다 (%d / %d 바이트)", "Downloaded size differs (%d / %d bytes)"), fi.Size(), t.Size)
 	}
 	if h == nil {
 		return nil

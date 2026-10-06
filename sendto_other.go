@@ -2,8 +2,8 @@
 
 package main
 
-import "errors"
-
-func sendToExists() bool  { return false }
-func createSendTo() error { return errors.New("Windows에서만 지원합니다") }
+func sendToExists() bool { return false }
+func createSendTo() error {
+	return newError("Windows에서만 지원합니다", "Only supported on Windows")
+}
 func removeSendTo() error { return nil }

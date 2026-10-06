@@ -15,7 +15,7 @@ import (
 func sendToPath() (string, error) {
 	dir := os.Getenv("APPDATA")
 	if dir == "" {
-		return "", errors.New("APPDATA가 설정되지 않았습니다")
+		return "", newError("APPDATA가 설정되지 않았습니다", "APPDATA is not set")
 	}
 	return filepath.Join(dir, "Microsoft", "Windows", "SendTo", "Pixeldrain.lnk"), nil
 }
@@ -72,7 +72,7 @@ func createSendTo() error {
 		"TargetPath":       exe,
 		"WorkingDirectory": filepath.Dir(exe),
 		"IconLocation":     exe + ",0",
-		"Description":      "pixeldrain에 올리기",
+		"Description":      L("pixeldrain에 올리기", "Upload to pixeldrain"),
 	} {
 		if _, err := oleutil.PutProperty(sc, prop, val); err != nil {
 			return err

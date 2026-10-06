@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net/url"
 	"path"
@@ -140,7 +139,7 @@ func (a *App) resolveLink(ctx context.Context, l parsedLink, dir string) ([]down
 			return nil, err
 		}
 		if len(files) == 0 {
-			return nil, errors.New(errorMessages["not_found"])
+			return nil, newError("파일을 찾을 수 없습니다", "File not found")
 		}
 		return fileSources(files, dir), nil
 	case linkList:
@@ -182,7 +181,7 @@ func (a *App) walkFS(ctx context.Context, p, dir string) ([]downloadSource, erro
 	var walk func(dirPath, local string, st *pdStat, depth int) error
 	walk = func(dirPath, local string, st *pdStat, depth int) error {
 		if depth > 64 {
-			return errors.New("폴더가 너무 깊습니다")
+			return newError("폴더가 너무 깊습니다", "Folders are nested too deeply")
 		}
 		for _, c := range st.Children {
 			if err := ctx.Err(); err != nil {
@@ -201,7 +200,7 @@ func (a *App) walkFS(ctx context.Context, p, dir string) ([]downloadSource, erro
 			}
 			out = append(out, fsSource(cp, c, filepath.Join(local, sanitizeName(c.Name))))
 			if len(out) > maxWalkFiles {
-				return errors.New("파일이 너무 많습니다")
+				return newError("파일이 너무 많습니다", "Too many files")
 			}
 		}
 		return nil

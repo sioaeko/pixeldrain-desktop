@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -17,7 +16,7 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
-const appVersion = "1.0.0"
+const appVersion = "1.1.0"
 
 // App is bound to the frontend; its exported methods become JS functions.
 type App struct {
@@ -62,6 +61,7 @@ func newAppAt(configDir, dataDir string) *App {
 
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
+	setLanguage(a.store.get().Settings.Language)
 	a.transfers.awake = newSleepGuard()
 	a.transfers.taskbar = newTaskbarProgress()
 	a.restored = a.transfers.load(a.store.get().Settings.AutoResume)
@@ -134,11 +134,11 @@ func (a *App) secondInstance(d options.SecondInstanceData) {
 	// queued exactly once however many frontends are attached.
 	if len(in.Paths) > 0 {
 		if a.client.apiKey() == "" {
-			a.emit("app:notice", "error", "파일을 올리려면 먼저 로그인하세요")
+			a.emit("app:notice", "error", L("파일을 올리려면 먼저 로그인하세요", "Sign in first to upload files"))
 		} else if n, err := a.EnqueueUploads(in.Paths, UploadTarget{Kind: targetFiles}); err != nil {
 			a.emit("app:notice", "error", err.Error())
 		} else {
-			a.emit("app:notice", "info", fmt.Sprintf("%d개 파일을 올릴 목록에 넣었습니다", n))
+			a.emit("app:notice", "info", fmt.Sprintf(L("%d개 파일을 올릴 목록에 넣었습니다", "Queued %d file(s) for upload"), n))
 		}
 		in.Paths = nil
 	}
@@ -271,23 +271,26 @@ func (a *App) setUser(u *pdUser) {
 }
 
 type AppState struct {
-	LoggedIn  bool     `json:"loggedIn"`
-	Guest     bool     `json:"guest"`
-	Account   *Account `json:"account"`
-	Settings  Settings `json:"settings"`
-	MediaBase string   `json:"mediaBase"`
-	SiteURL   string   `json:"siteUrl"`
-	Version   string   `json:"version"`
-	Player    string   `json:"player"`
-	Restored  int      `json:"restored"` // unfinished transfers from the last run
-	Error     string   `json:"error,omitempty"`
+	LoggedIn   bool     `json:"loggedIn"`
+	Guest      bool     `json:"guest"`
+	Account    *Account `json:"account"`
+	Settings   Settings `json:"settings"`
+	MediaBase  string   `json:"mediaBase"`
+	SiteURL    string   `json:"siteUrl"`
+	Version    string   `json:"version"`
+	Player     string   `json:"player"`
+	Restored   int      `json:"restored"`   // unfinished transfers from the last run
+	Lang       string   `json:"lang"`       // resolved UI language: ko | en
+	SystemLang string   `json:"systemLang"` // language used for the "system" setting
+	Error      string   `json:"error,omitempty"`
 }
 
 // Init restores the saved session, if any.
 func (a *App) Init() AppState {
 	cfg := a.store.get()
+	lang := setLanguage(cfg.Settings.Language)
 	st := AppState{Settings: cfg.Settings, MediaBase: a.media.base, SiteURL: a.client.siteURL(),
-		Version: appVersion, Player: a.playerPath(), Restored: a.restored}
+		Version: appVersion, Player: a.playerPath(), Restored: a.restored, Lang: lang, SystemLang: systemLanguage()}
 	a.restored = 0
 	a.userMu.RLock()
 	st.Guest = a.guest
@@ -300,9 +303,9 @@ func (a *App) Init() AppState {
 	u, err := a.client.User(ctx)
 	if err != nil {
 		if isUnauthorized(err) {
-			st.Error = "저장된 API 키가 더 이상 유효하지 않습니다. 다시 로그인하세요"
+			st.Error = L("저장된 API 키가 더 이상 유효하지 않습니다. 다시 로그인하세요", "The saved API key is no longer valid. Sign in again")
 		} else {
-			st.Error = "pixeldrain에 연결할 수 없습니다: " + err.Error()
+			st.Error = L("pixeldrain에 연결할 수 없습니다: ", "Can't connect to pixeldrain: ") + err.Error()
 		}
 		return st
 	}
@@ -314,7 +317,7 @@ func (a *App) Init() AppState {
 func (a *App) acceptKey(key string) (*Account, error) {
 	key = strings.TrimSpace(key)
 	if key == "" {
-		return nil, errors.New("API 키를 입력하세요")
+		return nil, newError("API 키를 입력하세요", "Enter an API key")
 	}
 	prev := a.client.apiKey()
 	a.client.setKey(key)
@@ -347,7 +350,7 @@ type LoginResult struct {
 func (a *App) LoginWithPassword(username, password, otp string) (LoginResult, error) {
 	username = strings.TrimSpace(username)
 	if username == "" {
-		return LoginResult{}, errors.New("사용자 이름이나 이메일을 입력하세요")
+		return LoginResult{}, newError("사용자 이름이나 이메일을 입력하세요", "Enter a username or e-mail address")
 	}
 	ctx, cancel := a.timeout(30 * time.Second)
 	defer cancel()
@@ -399,13 +402,14 @@ func (a *App) GetSettings() Settings { return a.store.get().Settings }
 
 func (a *App) SaveSettings(s Settings) (Settings, error) {
 	err := a.store.update(func(c *Config) { c.Settings = s })
+	setLanguage(a.store.get().Settings.Language)
 	a.transfers.notify()
 	return a.store.get().Settings, err
 }
 
 func (a *App) PickDownloadDir() (string, error) {
 	return runtime.OpenDirectoryDialog(a.ctx, runtime.OpenDialogOptions{
-		Title: "기본 저장 폴더", DefaultDirectory: a.store.get().Settings.DownloadDir})
+		Title: L("기본 저장 폴더", "Default download folder"), DefaultDirectory: a.store.get().Settings.DownloadDir})
 }
 
 // --------------------------------------------------------------- files
@@ -531,10 +535,10 @@ func (a *App) GetList(id string) (*ListDetail, error) {
 func (a *App) CreateList(title string, ids []string) (string, error) {
 	title = strings.TrimSpace(title)
 	if title == "" {
-		title = "Pixeldrain 목록"
+		title = L("Pixeldrain 목록", "Pixeldrain list")
 	}
 	if len([]rune(title)) > 300 {
-		return "", errors.New("목록 이름은 300자까지 쓸 수 있습니다")
+		return "", newError("목록 이름은 300자까지 쓸 수 있습니다", "List names can be up to 300 characters")
 	}
 	ctx, cancel := a.timeout(60 * time.Second)
 	defer cancel()
@@ -604,7 +608,7 @@ func (a *App) FSList(p string) (*FSDir, error) {
 func validName(name string) (string, error) {
 	name = strings.TrimSpace(name)
 	if name == "" || name == "." || name == ".." || strings.ContainsAny(name, "/\\") {
-		return "", errors.New("올바른 이름을 입력하세요")
+		return "", newError("올바른 이름을 입력하세요", "Enter a valid name")
 	}
 	return name, nil
 }
@@ -660,7 +664,7 @@ func (a *App) FSShare(p string) (string, error) {
 			return "", a.wrap(err)
 		}
 		if id = st.node().ID; id == "" {
-			return "", errors.New("공유 링크를 만들지 못했습니다")
+			return "", newError("공유 링크를 만들지 못했습니다", "Couldn't create a share link")
 		}
 	}
 	return a.client.siteURL() + "/d/" + id, nil
@@ -679,20 +683,20 @@ func (a *App) pickDir(ask bool) (string, error) {
 	if !ask {
 		return dir, nil
 	}
-	return runtime.OpenDirectoryDialog(a.ctx, runtime.OpenDialogOptions{Title: "저장할 폴더 선택", DefaultDirectory: dir})
+	return runtime.OpenDirectoryDialog(a.ctx, runtime.OpenDialogOptions{Title: L("저장할 폴더 선택", "Choose a download folder"), DefaultDirectory: dir})
 }
 
 // PickAndUpload shows a native file (or folder) picker and queues the result.
 func (a *App) PickAndUpload(target UploadTarget, folder bool) (int, error) {
 	var paths []string
 	if folder {
-		p, err := runtime.OpenDirectoryDialog(a.ctx, runtime.OpenDialogOptions{Title: "올릴 폴더 선택"})
+		p, err := runtime.OpenDirectoryDialog(a.ctx, runtime.OpenDialogOptions{Title: L("올릴 폴더 선택", "Choose a folder to upload")})
 		if err != nil || p == "" {
 			return 0, err
 		}
 		paths = []string{p}
 	} else {
-		ps, err := runtime.OpenMultipleFilesDialog(a.ctx, runtime.OpenDialogOptions{Title: "올릴 파일 선택"})
+		ps, err := runtime.OpenMultipleFilesDialog(a.ctx, runtime.OpenDialogOptions{Title: L("올릴 파일 선택", "Choose files to upload")})
 		if err != nil || len(ps) == 0 {
 			return 0, err
 		}
@@ -792,7 +796,7 @@ func (a *App) playerPath() string {
 func (a *App) PlayExternal(id, fsPath, name string) error {
 	p := a.playerPath()
 	if p == "" {
-		return errors.New("외부 플레이어를 찾지 못했습니다. 설정에서 플레이어를 지정하세요")
+		return newError("외부 플레이어를 찾지 못했습니다. 설정에서 플레이어를 지정하세요", "No external player found. Choose one in Settings")
 	}
 	u := a.media.fileStreamURL(id, name)
 	if fsPath != "" {
@@ -807,7 +811,7 @@ func (a *App) PlayExternal(id, fsPath, name string) error {
 
 func (a *App) PickPlayer() (string, error) {
 	return runtime.OpenFileDialog(a.ctx, runtime.OpenDialogOptions{
-		Title:   "외부 플레이어 선택",
-		Filters: []runtime.FileFilter{{DisplayName: "프로그램 (*.exe)", Pattern: "*.exe"}},
+		Title:   L("외부 플레이어 선택", "Choose an external player"),
+		Filters: []runtime.FileFilter{{DisplayName: L("프로그램 (*.exe)", "Programs (*.exe)"), Pattern: "*.exe"}},
 	})
 }

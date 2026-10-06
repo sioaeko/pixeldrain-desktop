@@ -1,3 +1,5 @@
+import { getLang, locale, tr } from "./i18n";
+
 export function formatBytes(n: number, digits = 1): string {
   if (!Number.isFinite(n) || n < 0) return "—";
   if (n < 1024) return `${n} B`;
@@ -19,28 +21,29 @@ export function formatSpeed(bps: number): string {
 export function formatDuration(sec: number): string {
   if (!Number.isFinite(sec) || sec <= 0) return "";
   sec = Math.round(sec);
-  if (sec < 60) return `${sec}초`;
+  const ko = getLang() === "ko";
+  if (sec < 60) return ko ? `${sec}초` : `${sec}s`;
   const m = Math.floor(sec / 60);
-  if (m < 60) return `${m}분 ${sec % 60}초`;
+  if (m < 60) return ko ? `${m}분 ${sec % 60}초` : `${m}m ${sec % 60}s`;
   const h = Math.floor(m / 60);
-  if (h < 48) return `${h}시간 ${m % 60}분`;
-  return `${Math.floor(h / 24)}일 ${h % 24}시간`;
+  if (h < 48) return ko ? `${h}시간 ${m % 60}분` : `${h}h ${m % 60}m`;
+  return ko ? `${Math.floor(h / 24)}일 ${h % 24}시간` : `${Math.floor(h / 24)}d ${h % 24}h`;
 }
 
-const dateFmt = new Intl.DateTimeFormat("ko-KR", { year: "numeric", month: "2-digit", day: "2-digit" });
-const timeFmt = new Intl.DateTimeFormat("ko-KR", { hour: "2-digit", minute: "2-digit", hour12: false });
+const dateFmt = () => new Intl.DateTimeFormat(locale(), { year: "numeric", month: "2-digit", day: "2-digit" });
+const timeFmt = () => new Intl.DateTimeFormat(locale(), { hour: "2-digit", minute: "2-digit", hour12: false });
 
 export function formatDate(iso: string | number | undefined): string {
   if (!iso) return "—";
   const d = new Date(iso);
   if (Number.isNaN(d.getTime()) || d.getFullYear() < 2000) return "—";
   const now = new Date();
-  if (d.toDateString() === now.toDateString()) return `오늘 ${timeFmt.format(d)}`;
-  return dateFmt.format(d).replace(/\.\s?$/, "");
+  if (d.toDateString() === now.toDateString()) return `${tr("오늘", "Today")} ${timeFmt().format(d)}`;
+  return dateFmt().format(d).replace(/\.\s?$/, "");
 }
 
 export function formatCount(n: number): string {
-  return new Intl.NumberFormat("ko-KR").format(n);
+  return new Intl.NumberFormat(locale()).format(n);
 }
 
 export type FileKind = "image" | "video" | "audio" | "text" | "pdf" | "archive" | "other";

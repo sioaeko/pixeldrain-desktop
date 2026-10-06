@@ -70,21 +70,21 @@ func (a *App) onIdle(r idleReport) {
 	if st.Notify && !appInForeground() {
 		var parts []string
 		if r.Uploads > 0 {
-			parts = append(parts, fmt.Sprintf("%d개 올림", r.Uploads))
+			parts = append(parts, fmt.Sprintf(L("%d개 올림", "%d uploaded"), r.Uploads))
 		}
 		if r.Downloads > 0 {
-			parts = append(parts, fmt.Sprintf("%d개 받음", r.Downloads))
+			parts = append(parts, fmt.Sprintf(L("%d개 받음", "%d downloaded"), r.Downloads))
 		}
 		if r.Failed > 0 {
-			parts = append(parts, fmt.Sprintf("%d개 실패", r.Failed))
+			parts = append(parts, fmt.Sprintf(L("%d개 실패", "%d failed"), r.Failed))
 		}
-		title := "전송을 마쳤습니다"
+		title := L("전송을 마쳤습니다", "Transfers finished")
 		if r.Failed > 0 {
-			title = "전송을 마쳤지만 실패한 항목이 있습니다"
+			title = L("전송을 마쳤지만 실패한 항목이 있습니다", "Transfers finished with some failures")
 		}
 		body := strings.Join(parts, ", ")
 		if copied {
-			body += ". 링크를 클립보드에 복사했습니다."
+			body += L(". 링크를 클립보드에 복사했습니다.", ". Links copied to the clipboard.")
 		}
 		a.notify(title, body)
 	}

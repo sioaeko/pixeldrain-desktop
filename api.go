@@ -122,7 +122,7 @@ type apiError struct {
 
 func (e *apiError) Error() string {
 	if msg, ok := errorMessages[e.Value]; ok {
-		return msg
+		return L(msg[0], msg[1])
 	}
 	if e.Message != "" {
 		return fmt.Sprintf("%s (HTTP %d)", e.Message, e.Status)
@@ -130,48 +130,48 @@ func (e *apiError) Error() string {
 	if e.Value != "" {
 		return fmt.Sprintf("%s (HTTP %d)", e.Value, e.Status)
 	}
-	return fmt.Sprintf("서버 오류 (HTTP %d)", e.Status)
+	return fmt.Sprintf(L("서버 오류 (HTTP %d)", "Server error (HTTP %d)"), e.Status)
 }
 
 // errorMessages translates the error codes users actually run into.
-var errorMessages = map[string]string{
-	"authentication_required":              "로그인이 필요합니다",
-	"authentication_failed":                "API 키가 올바르지 않거나 만료되었습니다",
-	"forbidden":                            "이 작업을 할 권한이 없습니다",
-	"not_found":                            "파일을 찾을 수 없습니다",
-	"path_not_found":                       "경로를 찾을 수 없습니다",
-	"permission_denied":                    "이 경로에 대한 권한이 없습니다",
-	"user_not_found":                       "계정을 찾을 수 없습니다",
-	"password_incorrect":                   "비밀번호가 올바르지 않습니다",
-	"otp_incorrect":                        "인증 코드가 올바르지 않습니다",
-	"otp_required":                         "2단계 인증 코드가 필요합니다",
-	"ip_rate_limit_reached":                "요청이 너무 많습니다. 잠시 후 다시 시도하세요",
-	"read_only_mode_enabled":               "pixeldrain이 읽기 전용 모드입니다. 잠시 후 다시 시도하세요",
-	"file_too_large":                       "파일이 요금제의 최대 파일 크기를 넘습니다",
-	"user_out_of_space":                    "저장 공간이 부족합니다",
-	"out_of_transfer":                      "이번 달 전송량을 모두 사용했습니다",
-	"name_contains_illegal_character":      "파일 이름에 사용할 수 없는 문자가 있습니다",
-	"name_too_long":                        "이름이 너무 깁니다 (최대 255바이트)",
-	"too_many_files":                       "파일 개수 한도에 도달했습니다",
-	"ip_banned":                            "이 IP는 업로드가 차단되었습니다",
-	"account_banned":                       "계정이 차단되었습니다",
-	"email_address_not_verified":           "업로드하려면 먼저 이메일 주소를 인증하세요",
-	"node_already_exists":                  "같은 이름의 항목이 이미 있습니다",
-	"directory_not_empty":                  "폴더가 비어 있지 않습니다",
-	"file_rate_limited_captcha_required":   "다운로드 제한: 브라우저에서 CAPTCHA를 풀어야 합니다",
-	"virus_detected_captcha_required":      "악성 파일 경고: 브라우저에서 확인 후 받으세요",
-	"ip_download_limited_captcha_required": "IP 다운로드 한도 도달: 브라우저에서 CAPTCHA를 풀어야 합니다",
-	"server_overload_captcha_required":     "서버 과부하: 브라우저에서 CAPTCHA를 풀어야 합니다",
-	"hotlink_detected":                     "핫링크가 차단되었습니다. 프리미엄 계정으로 로그인하세요",
-	"max_concurrent_downloads":             "동시 다운로드 한도에 도달했습니다",
-	"transfer_limit_exceeded":              "전송 한도를 넘었습니다. 한도가 초기화될 때까지 기다리세요",
-	"download_limit_exceeded":              "다운로드 한도를 넘었습니다. 한도가 초기화될 때까지 기다리세요",
-	"unavailable_for_legal_reasons":        "법적 사유로 제공되지 않는 파일입니다",
-	"list_file_not_found":                  "목록에 넣을 파일 중 일부를 찾을 수 없습니다",
-	"cannot_create_empty_list":             "빈 목록은 만들 수 없습니다",
-	"no_login_method_available":            "비밀번호가 설정되지 않은 계정입니다. API 키로 로그인하세요",
-	"login_link_already_sent":              "로그인 링크가 이미 이메일로 전송되었습니다",
-	"request_origin_invalid":               "pixeldrain이 이 로그인 요청을 거부했습니다. API 키로 로그인하세요",
+var errorMessages = map[string][2]string{
+	"authentication_required":              {"로그인이 필요합니다", "Sign-in required"},
+	"authentication_failed":                {"API 키가 올바르지 않거나 만료되었습니다", "The API key is invalid or has expired"},
+	"forbidden":                            {"이 작업을 할 권한이 없습니다", "You are not allowed to do this"},
+	"not_found":                            {"파일을 찾을 수 없습니다", "File not found"},
+	"path_not_found":                       {"경로를 찾을 수 없습니다", "Path not found"},
+	"permission_denied":                    {"이 경로에 대한 권한이 없습니다", "You don't have permission for this path"},
+	"user_not_found":                       {"계정을 찾을 수 없습니다", "Account not found"},
+	"password_incorrect":                   {"비밀번호가 올바르지 않습니다", "Incorrect password"},
+	"otp_incorrect":                        {"인증 코드가 올바르지 않습니다", "Incorrect verification code"},
+	"otp_required":                         {"2단계 인증 코드가 필요합니다", "A two-factor authentication code is required"},
+	"ip_rate_limit_reached":                {"요청이 너무 많습니다. 잠시 후 다시 시도하세요", "Too many requests. Try again in a moment"},
+	"read_only_mode_enabled":               {"pixeldrain이 읽기 전용 모드입니다. 잠시 후 다시 시도하세요", "pixeldrain is in read-only mode. Try again later"},
+	"file_too_large":                       {"파일이 요금제의 최대 파일 크기를 넘습니다", "The file exceeds your plan's maximum file size"},
+	"user_out_of_space":                    {"저장 공간이 부족합니다", "Not enough storage space"},
+	"out_of_transfer":                      {"이번 달 전송량을 모두 사용했습니다", "You have used up this month's transfer"},
+	"name_contains_illegal_character":      {"파일 이름에 사용할 수 없는 문자가 있습니다", "The file name contains characters that aren't allowed"},
+	"name_too_long":                        {"이름이 너무 깁니다 (최대 255바이트)", "Name is too long (max 255 bytes)"},
+	"too_many_files":                       {"파일 개수 한도에 도달했습니다", "File count limit reached"},
+	"ip_banned":                            {"이 IP는 업로드가 차단되었습니다", "Uploads are blocked for this IP"},
+	"account_banned":                       {"계정이 차단되었습니다", "This account is banned"},
+	"email_address_not_verified":           {"업로드하려면 먼저 이메일 주소를 인증하세요", "Verify your e-mail address before uploading"},
+	"node_already_exists":                  {"같은 이름의 항목이 이미 있습니다", "An item with the same name already exists"},
+	"directory_not_empty":                  {"폴더가 비어 있지 않습니다", "The folder is not empty"},
+	"file_rate_limited_captcha_required":   {"다운로드 제한: 브라우저에서 CAPTCHA를 풀어야 합니다", "Download limited: solve the CAPTCHA in a browser"},
+	"virus_detected_captcha_required":      {"악성 파일 경고: 브라우저에서 확인 후 받으세요", "Malware warning: confirm in a browser before downloading"},
+	"ip_download_limited_captcha_required": {"IP 다운로드 한도 도달: 브라우저에서 CAPTCHA를 풀어야 합니다", "IP download limit reached: solve the CAPTCHA in a browser"},
+	"server_overload_captcha_required":     {"서버 과부하: 브라우저에서 CAPTCHA를 풀어야 합니다", "Server overloaded: solve the CAPTCHA in a browser"},
+	"hotlink_detected":                     {"핫링크가 차단되었습니다. 프리미엄 계정으로 로그인하세요", "Hotlinking is blocked. Sign in with a premium account"},
+	"max_concurrent_downloads":             {"동시 다운로드 한도에 도달했습니다", "Concurrent download limit reached"},
+	"transfer_limit_exceeded":              {"전송 한도를 넘었습니다. 한도가 초기화될 때까지 기다리세요", "Transfer limit exceeded. Wait until it resets"},
+	"download_limit_exceeded":              {"다운로드 한도를 넘었습니다. 한도가 초기화될 때까지 기다리세요", "Download limit exceeded. Wait until it resets"},
+	"unavailable_for_legal_reasons":        {"법적 사유로 제공되지 않는 파일입니다", "This file is unavailable for legal reasons"},
+	"list_file_not_found":                  {"목록에 넣을 파일 중 일부를 찾을 수 없습니다", "Some files for the list could not be found"},
+	"cannot_create_empty_list":             {"빈 목록은 만들 수 없습니다", "An empty list can't be created"},
+	"no_login_method_available":            {"비밀번호가 설정되지 않은 계정입니다. API 키로 로그인하세요", "This account has no password. Sign in with an API key"},
+	"login_link_already_sent":              {"로그인 링크가 이미 이메일로 전송되었습니다", "A login link was already sent by e-mail"},
+	"request_origin_invalid":               {"pixeldrain이 이 로그인 요청을 거부했습니다. API 키로 로그인하세요", "pixeldrain rejected this login request. Sign in with an API key"},
 }
 
 func errValue(err error) string {
@@ -363,7 +363,7 @@ func (c *Client) Login(ctx context.Context, username, password, totp string) (st
 		return "", err
 	}
 	if out.AuthKey == "" {
-		return "", errors.New("로그인 응답에 API 키가 없습니다")
+		return "", newError("로그인 응답에 API 키가 없습니다", "The login response contained no API key")
 	}
 	return out.AuthKey, nil
 }
@@ -439,10 +439,10 @@ func (c *Client) UploadFile(ctx context.Context, name string, body io.Reader, si
 	}
 	var f pdFile
 	if err := json.NewDecoder(res.Body).Decode(&f); err != nil {
-		return nil, fmt.Errorf("업로드 응답을 읽지 못했습니다: %w", err)
+		return nil, fmt.Errorf(L("업로드 응답을 읽지 못했습니다: %w", "Could not read the upload response: %w"), err)
 	}
 	if f.ID == "" {
-		return nil, errors.New("업로드 응답에 파일 ID가 없습니다")
+		return nil, newError("업로드 응답에 파일 ID가 없습니다", "The upload response contained no file ID")
 	}
 	if f.Name == "" {
 		f.Name = name

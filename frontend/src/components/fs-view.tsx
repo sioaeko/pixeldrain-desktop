@@ -12,20 +12,21 @@ import { openContextMenu } from "./context-menu";
 import { Preview, PreviewItem } from "./preview";
 import { EmptyState, Spinner } from "./ui";
 import { LinkButton, SelectionBar, UploadButton, ViewHeader } from "./view-header";
+import { tr, plural } from "../lib/i18n";
 
-const columns: Column<FSNode>[] = [
+const columns = (): Column<FSNode>[] => [
   {
-    key: "name", header: "이름", width: "minmax(0,1fr)", sortable: true,
+    key: "name", header: tr("이름", "Name"), width: "minmax(0,1fr)", sortable: true,
     render: (n) => (
       <NameCell
         name={n.name}
-        sub={n.shareId ? "공유 중" : undefined}
+        sub={n.shareId ? tr("공유 중", "Shared") : undefined}
         thumb={<FileThumb name={n.name} mime={n.fileType} fsPath={n.path} dir={n.type === "dir"} />}
       />
     ),
   },
-  { key: "size", header: "크기", width: "6rem", align: "right", sortable: true, render: (n) => <span className="text-mute">{n.type === "dir" ? "" : formatBytes(n.size)}</span> },
-  { key: "modified", header: "수정한 날짜", width: "7.5rem", align: "right", sortable: true, hideBelow: 520, render: (n) => <span className="text-mute">{formatDate(n.modified)}</span> },
+  { key: "size", header: tr("크기", "Size"), width: "6rem", align: "right", sortable: true, render: (n) => <span className="text-mute">{n.type === "dir" ? "" : formatBytes(n.size)}</span> },
+  { key: "modified", header: tr("수정한 날짜", "Modified"), width: "7.5rem", align: "right", sortable: true, hideBelow: 520, render: (n) => <span className="text-mute">{formatDate(n.modified)}</span> },
 ];
 
 export function FSView() {
@@ -83,7 +84,7 @@ export function FSView() {
   };
 
   const mkdir = async () => {
-    const name = await promptDialog({ title: "새 폴더", confirmLabel: "만들기", placeholder: "폴더 이름" });
+    const name = await promptDialog({ title: tr("새 폴더", "New folder"), confirmLabel: tr("만들기", "Create"), placeholder: tr("폴더 이름", "Folder name") });
     if (!name) return;
     try {
       await api.fsMkdir(path, name);
@@ -94,7 +95,7 @@ export function FSView() {
   };
 
   const rename = async (n: FSNode) => {
-    const name = await promptDialog({ title: "이름 바꾸기", confirmLabel: "바꾸기", value: n.name });
+    const name = await promptDialog({ title: tr("이름 바꾸기", "Rename"), confirmLabel: tr("바꾸기", "Rename"), value: n.name });
     if (!name || name === n.name) return;
     try {
       await api.fsRename(n.path, name);
@@ -109,16 +110,16 @@ export function FSView() {
     if (app.settings.confirmDelete) {
       const dirs = nodes.filter((n) => n.type === "dir").length;
       const ok = await confirmDialog({
-        title: nodes.length === 1 ? `"${nodes[0].name}"을(를) 삭제할까요?` : `항목 ${nodes.length}개를 삭제할까요?`,
-        body: dirs ? "폴더 안의 모든 파일도 함께 영구히 삭제됩니다." : "pixeldrain에서 영구히 삭제됩니다.",
-        confirmLabel: "삭제",
+        title: nodes.length === 1 ? tr(`"${nodes[0].name}"을(를) 삭제할까요?`, `Delete "${nodes[0].name}"?`) : tr(`항목 ${nodes.length}개를 삭제할까요?`, `Delete ${nodes.length} items?`),
+        body: dirs ? tr("폴더 안의 모든 파일도 함께 영구히 삭제됩니다.", "Everything inside the folders is permanently deleted too.") : tr("pixeldrain에서 영구히 삭제됩니다.", "They are permanently deleted from pixeldrain."),
+        confirmLabel: tr("삭제", "Delete"),
         danger: true,
       });
       if (!ok) return;
     }
     try {
       await api.fsDelete(nodes.map((n) => n.path));
-      toast.success(nodes.length === 1 ? "삭제했습니다" : `항목 ${nodes.length}개를 삭제했습니다`);
+      toast.success(nodes.length === 1 ? tr("삭제했습니다", "Deleted") : tr(`항목 ${nodes.length}개를 삭제했습니다`, `Deleted ${nodes.length} items`));
     } catch (e) {
       toast.error(errMsg(e));
     }
@@ -141,14 +142,14 @@ export function FSView() {
   const menu = (e: React.MouseEvent, nodes: FSNode[]) => {
     const one = nodes.length === 1 ? nodes[0] : null;
     openContextMenu(e, [
-      ...(one ? [{ label: one.type === "dir" ? "열기" : "미리 보기", icon: one.type === "dir" ? "folder_open" : "visibility", hint: "Enter", onSelect: () => open(one) }] : []),
-      ...(one ? [{ label: "공유 링크 복사", icon: "link", onSelect: () => share(one.path) }] : []),
+      ...(one ? [{ label: one.type === "dir" ? tr("열기", "Open") : tr("미리 보기", "Preview"), icon: one.type === "dir" ? "folder_open" : "visibility", hint: "Enter", onSelect: () => open(one) }] : []),
+      ...(one ? [{ label: tr("공유 링크 복사", "Copy share link"), icon: "link", onSelect: () => share(one.path) }] : []),
       null,
-      { label: "받기", icon: "download", onSelect: () => download(nodes.map((n) => n.path)) },
-      { label: "다른 폴더에 받기", icon: "drive_folder_upload", onSelect: () => download(nodes.map((n) => n.path), true) },
-      ...(one ? [{ label: "이름 바꾸기", icon: "edit", hint: "F2", onSelect: () => rename(one) }] : []),
+      { label: tr("받기", "Download"), icon: "download", onSelect: () => download(nodes.map((n) => n.path)) },
+      { label: tr("다른 폴더에 받기", "Download to…"), icon: "drive_folder_upload", onSelect: () => download(nodes.map((n) => n.path), true) },
+      ...(one ? [{ label: tr("이름 바꾸기", "Rename"), icon: "edit", hint: "F2", onSelect: () => rename(one) }] : []),
       null,
-      { label: "삭제", icon: "delete", hint: "Del", danger: true, onSelect: () => remove(nodes) },
+      { label: tr("삭제", "Delete"), icon: "delete", hint: "Del", danger: true, onSelect: () => remove(nodes) },
     ]);
   };
 
@@ -175,20 +176,20 @@ export function FSView() {
 
   const crumbs = dir?.crumbs ?? [];
   const title = (
-    <nav aria-label="경로" className="flex min-w-0 items-center gap-0.5">
+    <nav aria-label={tr("경로", "Path")} className="flex min-w-0 items-center gap-0.5">
       {crumbs.map((c, i) => (
         <span key={c.path} className="flex min-w-0 items-center gap-0.5">
           {i > 0 && <Icon name="chevron_right" className="text-[18px] shrink-0 text-faint" />}
           {i === crumbs.length - 1 ? (
-            <span className="truncate">{i === 0 ? "파일시스템" : c.name}</span>
+            <span className="truncate">{i === 0 ? tr("파일시스템", "Filesystem") : c.name}</span>
           ) : (
             <button className="truncate rounded px-1 text-mute hover:bg-raised hover:text-ink" onClick={() => setPath(c.path)}>
-              {i === 0 ? "파일시스템" : c.name}
+              {i === 0 ? tr("파일시스템", "Filesystem") : c.name}
             </button>
           )}
         </span>
       ))}
-      {!crumbs.length && "파일시스템"}
+      {!crumbs.length && tr("파일시스템", "Filesystem")}
     </nav>
   );
 
@@ -196,18 +197,18 @@ export function FSView() {
     <div className="flex min-h-0 flex-1 flex-col">
       <ViewHeader
         title={title}
-        sub={dir ? `항목 ${formatCount(dir.children?.length ?? 0)}개, ${formatBytes(usedBytes)}` : undefined}
+        sub={dir ? tr(`항목 ${formatCount(dir.children?.length ?? 0)}개, ${formatBytes(usedBytes)}`, `${plural(dir.children?.length ?? 0, "item")}, ${formatBytes(usedBytes)}`) : undefined}
         query={query}
         onQuery={setQuery}
         onRefresh={() => load(path)}
         refreshing={loading}
       >
-        <button className="icon-btn" onClick={() => share(path)} title="이 폴더 공유 링크 복사" aria-label="이 폴더 공유 링크 복사" disabled={path === "/me"}>
+        <button className="icon-btn" onClick={() => share(path)} title={tr("이 폴더 공유 링크 복사", "Copy this folder's share link")} aria-label={tr("이 폴더 공유 링크 복사", "Copy this folder's share link")} disabled={path === "/me"}>
           <Icon name="share" className="text-[18px]" />
         </button>
-        <button className="btn" onClick={mkdir} disabled={!dir?.canWrite} title="새 폴더" aria-label="새 폴더">
+        <button className="btn" onClick={mkdir} disabled={!dir?.canWrite} title={tr("새 폴더", "New folder")} aria-label={tr("새 폴더", "New folder")}>
           <Icon name="create_new_folder" className="text-[18px]" />
-          <span className="hidden lg:inline">새 폴더</span>
+          <span className="hidden lg:inline">{tr("새 폴더", "New folder")}</span>
         </button>
         <LinkButton />
         <UploadButton target={target} />
@@ -215,20 +216,20 @@ export function FSView() {
       {selectedNodes.length > 0 && (
         <SelectionBar count={selectedNodes.length} size={selectedSize} onClear={() => setSelected(new Set())}>
           <button className="btn" onClick={() => download(selectedNodes.map((n) => n.path))}>
-            <Icon name="download" className="text-[18px]" /> 받기
+            <Icon name="download" className="text-[18px]" />{tr(" 받기", " Download")}
           </button>
           {selectedNodes.length === 1 && (
             <>
               <button className="btn" onClick={() => share(selectedNodes[0].path)}>
-                <Icon name="link" className="text-[18px]" /> 공유 링크 복사
+                <Icon name="link" className="text-[18px]" />{tr(" 공유 링크 복사", " Copy share link")}
               </button>
               <button className="btn" onClick={() => rename(selectedNodes[0])}>
-                <Icon name="edit" className="text-[18px]" /> 이름 바꾸기
+                <Icon name="edit" className="text-[18px]" />{tr(" 이름 바꾸기", " Rename")}
               </button>
             </>
           )}
           <button className="btn btn-danger" onClick={() => remove(selectedNodes)}>
-            <Icon name="delete" className="text-[18px]" /> 삭제
+            <Icon name="delete" className="text-[18px]" />{tr(" 삭제", " Delete")}
           </button>
         </SelectionBar>
       )}
@@ -237,20 +238,20 @@ export function FSView() {
           <Spinner className="h-5 w-5 text-mute" />
         </div>
       ) : error ? (
-        <EmptyState icon={<Icon name="storage" />} title="이 폴더를 열지 못했습니다" body={error}>
+        <EmptyState icon={<Icon name="storage" />} title={tr("이 폴더를 열지 못했습니다", "Couldn't open this folder")} body={error}>
           <button className="btn" onClick={() => setPath("/me")}>
-            처음으로
+            {tr("처음으로", "Go to root")}
           </button>
           <button className="btn" onClick={() => load(path)}>
-            다시 시도
+            {tr("다시 시도", "Retry")}
           </button>
         </EmptyState>
       ) : (
         <DataTable
-          label="파일시스템"
+          label={tr("파일시스템", "Filesystem")}
           rows={rows}
           rowKey={(n) => n.path}
-          columns={columns}
+          columns={columns()}
           sort={sort}
           onSort={setSort}
           selected={selected}
@@ -261,14 +262,14 @@ export function FSView() {
           rowActions={(n) => (
             <>
               {n.type === "file" && (
-                <button className="icon-btn" title="미리 보기 (Space)" aria-label="미리 보기" onClick={() => open(n)}>
+                <button className="icon-btn" title={tr("미리 보기 (Space)", "Preview (Space)")} aria-label={tr("미리 보기", "Preview")} onClick={() => open(n)}>
                   <Icon name="visibility" className="text-[18px]" />
                 </button>
               )}
-              <button className="icon-btn" title="공유 링크 복사" aria-label="공유 링크 복사" onClick={() => share(n.path)}>
+              <button className="icon-btn" title={tr("공유 링크 복사", "Copy share link")} aria-label={tr("공유 링크 복사", "Copy share link")} onClick={() => share(n.path)}>
                 <Icon name="link" className="text-[18px]" />
               </button>
-              <button className="icon-btn" title="받기" aria-label="받기" onClick={() => download([n.path])}>
+              <button className="icon-btn" title={tr("받기", "Download")} aria-label={tr("받기", "Download")} onClick={() => download([n.path])}>
                 <Icon name="download" className="text-[18px]" />
               </button>
             </>
@@ -276,8 +277,8 @@ export function FSView() {
           empty={
             <EmptyState
               icon={<Icon name="storage" />}
-              title={query ? `"${query}"과(와) 일치하는 항목이 없습니다` : "빈 폴더입니다"}
-              body={query ? undefined : "폴더째 끌어 놓으면 하위 폴더 구조를 그대로 유지한 채 올라갑니다."}
+              title={query ? tr(`"${query}"과(와) 일치하는 항목이 없습니다`, `Nothing matches "${query}"`) : tr("빈 폴더입니다", "This folder is empty")}
+              body={query ? undefined : tr("폴더째 끌어 놓으면 하위 폴더 구조를 그대로 유지한 채 올라갑니다.", "Drop a whole folder and its subfolder structure is kept.")}
             />
           }
         />

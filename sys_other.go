@@ -4,9 +4,11 @@ package main
 
 import (
 	"errors"
+	"os"
 	"os/exec"
 	"path/filepath"
 	goruntime "runtime"
+	"strings"
 )
 
 func clipboardFiles() []string { return nil }
@@ -41,4 +43,16 @@ func findPlayer() string {
 		}
 	}
 	return ""
+}
+
+func systemLanguage() string {
+	for _, v := range []string{"LC_ALL", "LC_MESSAGES", "LANG"} {
+		if l := os.Getenv(v); l != "" {
+			if strings.HasPrefix(strings.ToLower(l), "ko") {
+				return "ko"
+			}
+			return "en"
+		}
+	}
+	return "en"
 }

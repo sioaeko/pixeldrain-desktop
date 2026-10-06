@@ -11,14 +11,15 @@ import { openContextMenu } from "./context-menu";
 import { PixelStrip } from "./pixel-strip";
 import { EmptyState } from "./ui";
 import { LinkButton, ViewHeader } from "./view-header";
+import { tr, plural } from "../lib/i18n";
 
 type Filter = "all" | "active" | "failed" | "finished";
 
-const filters: { value: Filter; label: string }[] = [
-  { value: "all", label: "전체" },
-  { value: "active", label: "진행 중" },
-  { value: "failed", label: "실패" },
-  { value: "finished", label: "끝남" },
+const filters = (): { value: Filter; label: string }[] => [
+  { value: "all", label: tr("전체", "All") },
+  { value: "active", label: tr("진행 중", "Active") },
+  { value: "failed", label: tr("실패", "Failed") },
+  { value: "finished", label: tr("끝남", "Finished") },
 ];
 
 function matches(t: Transfer, f: Filter) {
@@ -38,39 +39,39 @@ export function statusText(t: Transfer, now: number): string {
   const pct = t.size > 0 ? Math.floor((t.done / t.size) * 100) : 0;
   switch (t.status) {
     case "queued":
-      return "대기 중";
+      return tr("대기 중", "Queued");
     case "paused":
-      return t.kind === "upload" ? "일시정지됨, 다시 시작하면 처음부터 올립니다" : "일시정지됨";
+      return t.kind === "upload" ? tr("일시정지됨, 다시 시작하면 처음부터 올립니다", "Paused; resuming uploads from the start") : tr("일시정지됨", "Paused");
     case "canceled":
-      return "취소됨";
+      return tr("취소됨", "Canceled");
     case "error":
-      return t.error || "실패";
+      return t.error || tr("실패", "Failed");
     case "skipped":
-      return t.note || "건너뜀";
+      return t.note || tr("건너뜀", "Skipped");
     case "done":
       if (t.note) return t.note;
-      return t.verified ? "완료, SHA-256 일치" : "완료";
+      return t.verified ? tr("완료, SHA-256 일치", "Done, SHA-256 verified") : tr("완료", "Done");
   }
-  const attempt = t.attempt > 1 ? ` (${t.attempt}번째 시도)` : "";
+  const attempt = t.attempt > 1 ? tr(` (${t.attempt}번째 시도)`, ` (attempt ${t.attempt})`) : "";
   switch (t.phase) {
     case "hashing":
-      return `SHA-256 계산 중 ${pct}%`;
+      return tr(`SHA-256 계산 중 ${pct}%`, `Computing SHA-256 ${pct}%`);
     case "waiting":
-      return "pixeldrain이 파일을 마무리하는 중";
+      return tr("pixeldrain이 파일을 마무리하는 중", "pixeldrain is finalizing the file");
     case "verifying":
-      return "SHA-256 비교 중";
+      return tr("SHA-256 비교 중", "Comparing SHA-256");
     case "retrying": {
       const left = Math.max(0, Math.ceil(((t.retryAt ?? now) - now) / 1000));
-      return `${left}초 뒤 다시 시도${t.note ? `: ${t.note}` : ""}`;
+      return tr(`${left}초 뒤 다시 시도`, `Retrying in ${left}s`) + (t.note ? `: ${t.note}` : "");
     }
     default:
-      return `${t.kind === "upload" ? "올리는 중" : "받는 중"} ${pct}%${attempt}`;
+      return `${t.kind === "upload" ? tr("올리는 중", "Uploading") : tr("받는 중", "Downloading")} ${pct}%${attempt}`;
   }
 }
 
 function destination(t: Transfer): string {
   if (t.kind === "download") return t.localPath;
-  if (t.target === "fs") return t.remotePath.replace(/^\/me/, "파일시스템");
+  if (t.target === "fs") return t.remotePath.replace(/^\/me/, tr("파일시스템", "Filesystem"));
   return t.localPath;
 }
 
@@ -83,12 +84,12 @@ async function stopTransfers(ids: string[] | null, how: "pause" | "cancel") {
   const lost = items.filter((t) => t.kind === "upload" && t.status === "running").reduce((n, t) => n + t.done, 0);
   if (lost >= LOSS_TO_CONFIRM || (how === "cancel" && !ids)) {
     const ok = await confirmDialog({
-      title: how === "pause" ? "올리는 중인 파일을 멈출까요?" : ids ? "올리는 중인 파일을 취소할까요?" : "남은 전송을 모두 취소할까요?",
+      title: how === "pause" ? tr("올리는 중인 파일을 멈출까요?", "Pause the upload in progress?") : ids ? tr("올리는 중인 파일을 취소할까요?", "Cancel the upload in progress?") : tr("남은 전송을 모두 취소할까요?", "Cancel all remaining transfers?"),
       body:
         lost >= LOSS_TO_CONFIRM
-          ? `pixeldrain은 이어 올리기를 지원하지 않아서 지금까지 보낸 ${formatBytes(lost)}를 처음부터 다시 올려야 합니다.`
-          : "받다 만 임시 파일도 지웁니다. 끝난 전송은 그대로 둡니다.",
-      confirmLabel: how === "pause" ? "멈추기" : "취소하기",
+          ? tr(`pixeldrain은 이어 올리기를 지원하지 않아서 지금까지 보낸 ${formatBytes(lost)}를 처음부터 다시 올려야 합니다.`, `pixeldrain can't resume uploads, so the ${formatBytes(lost)} sent so far will have to be uploaded again from the start.`)
+          : tr("받다 만 임시 파일도 지웁니다. 끝난 전송은 그대로 둡니다.", "Partial download files are deleted too. Finished transfers stay."),
+      confirmLabel: how === "pause" ? tr("멈추기", "Pause") : tr("취소하기", "Cancel transfers"),
       danger: true,
     });
     if (!ok) return;
@@ -102,32 +103,32 @@ function transferMenu(e: React.MouseEvent, t: Transfer, siteUrl: string) {
   const finished = t.status === "done" || t.status === "skipped";
   const active = t.status === "running" || t.status === "queued";
   openContextMenu(e, [
-    ...(active ? [{ label: "일시정지", icon: "pause", onSelect: () => stopTransfers([t.id], "pause") }] : []),
-    ...(t.status === "paused" ? [{ label: "다시 시작", icon: "play_arrow", onSelect: () => api.resume([t.id]) }] : []),
+    ...(active ? [{ label: tr("일시정지", "Pause"), icon: "pause", onSelect: () => stopTransfers([t.id], "pause") }] : []),
+    ...(t.status === "paused" ? [{ label: tr("다시 시작", "Resume"), icon: "play_arrow", onSelect: () => api.resume([t.id]) }] : []),
     ...(t.status === "queued" || t.status === "paused"
-      ? [{ label: "가장 먼저 전송", icon: "vertical_align_top", onSelect: () => api.prioritize([t.id]) }]
+      ? [{ label: tr("가장 먼저 전송", "Move to front"), icon: "vertical_align_top", onSelect: () => api.prioritize([t.id]) }]
       : []),
-    ...(t.status === "error" || t.status === "canceled" ? [{ label: "다시 시도", icon: "replay", onSelect: () => api.retry([t.id]) }] : []),
+    ...(t.status === "error" || t.status === "canceled" ? [{ label: tr("다시 시도", "Retry"), icon: "replay", onSelect: () => api.retry([t.id]) }] : []),
     ...(link
       ? [
           null,
-          { label: "링크 복사", icon: "content_copy", onSelect: () => copyLinks([link]) },
-          { label: "직접 다운로드 링크 복사", icon: "link", onSelect: () => copyLinks([link], "direct") },
-          { label: "브라우저에서 열기", icon: "open_in_new", onSelect: () => api.openURL(link.url) },
+          { label: tr("링크 복사", "Copy link"), icon: "content_copy", onSelect: () => copyLinks([link]) },
+          { label: tr("직접 다운로드 링크 복사", "Copy direct download link"), icon: "link", onSelect: () => copyLinks([link], "direct") },
+          { label: tr("브라우저에서 열기", "Open in browser"), icon: "open_in_new", onSelect: () => api.openURL(link.url) },
         ]
       : []),
     ...(t.kind === "download" && finished
       ? [
           null,
-          { label: "파일 열기", icon: "file_open", onSelect: () => api.openLocal(t.localPath) },
-          { label: "폴더에서 보기", icon: "folder_open", onSelect: () => api.revealLocal(t.localPath) },
+          { label: tr("파일 열기", "Open file"), icon: "file_open", onSelect: () => api.openLocal(t.localPath) },
+          { label: tr("폴더에서 보기", "Show in folder"), icon: "folder_open", onSelect: () => api.revealLocal(t.localPath) },
         ]
       : []),
-    ...(t.kind === "upload" ? [null, { label: "원본 폴더에서 보기", icon: "folder_open", onSelect: () => api.revealLocal(t.localPath) }] : []),
+    ...(t.kind === "upload" ? [null, { label: tr("원본 폴더에서 보기", "Show source in folder"), icon: "folder_open", onSelect: () => api.revealLocal(t.localPath) }] : []),
     null,
     active || t.status === "paused"
-      ? { label: "취소", icon: "close", danger: true, onSelect: () => stopTransfers([t.id], "cancel") }
-      : { label: "목록에서 지우기", icon: "delete", onSelect: () => api.remove([t.id]) },
+      ? { label: tr("취소", "Cancel"), icon: "close", danger: true, onSelect: () => stopTransfers([t.id], "cancel") }
+      : { label: tr("목록에서 지우기", "Remove from list"), icon: "delete", onSelect: () => api.remove([t.id]) },
   ]);
 }
 
@@ -148,7 +149,7 @@ const Row = memo(
             "mt-0.5 flex h-6 w-6 items-center justify-center rounded-sm",
             t.status === "error" ? "bg-danger/15 text-danger" : finished ? "bg-ok/15 text-ok" : "bg-raised text-mute",
           )}
-          aria-label={t.kind === "upload" ? "올리기" : "받기"}
+          aria-label={t.kind === "upload" ? tr("올리기", "Upload") : tr("받기", "Download")}
         >
           <Icon name={t.kind === "upload" ? "arrow_upward" : "arrow_downward"} className="text-[15px]" />
         </span>
@@ -157,7 +158,7 @@ const Row = memo(
             <span className="truncate font-medium" title={t.name}>
               {t.name}
             </span>
-            {t.verified && <Icon name="verified_user" className="text-[15px] shrink-0 self-center text-ok" label="SHA-256 일치" />}
+            {t.verified && <Icon name="verified_user" className="text-[15px] shrink-0 self-center text-ok" label={tr("SHA-256 일치", "SHA-256 verified")} />}
           </div>
           <div className="truncate text-xs text-faint" title={destination(t)}>
             {destination(t)}
@@ -171,56 +172,56 @@ const Row = memo(
               {t.status === "running" && t.phase !== "hashing" ? `${formatBytes(t.done)} / ${formatBytes(t.size)}` : formatBytes(t.size)}
             </span>
             {t.status === "running" && t.speed > 0 && <span className="text-faint">{formatSpeed(t.speed)}</span>}
-            {eta && <span className="text-faint">{eta} 남음</span>}
+            {eta && <span className="text-faint">{tr(`${eta} 남음`, `${eta} left`)}</span>}
           </div>
         </div>
         <div className="flex items-start gap-0.5 opacity-70 group-hover:opacity-100">
           {t.status === "queued" && (
-            <IconAction label="가장 먼저 전송" onClick={() => api.prioritize([t.id])}>
+            <IconAction label={tr("가장 먼저 전송", "Move to front")} onClick={() => api.prioritize([t.id])}>
               <Icon name="vertical_align_top" />
             </IconAction>
           )}
           {active && (
-            <IconAction label="일시정지" onClick={() => stopTransfers([t.id], "pause")}>
+            <IconAction label={tr("일시정지", "Pause")} onClick={() => stopTransfers([t.id], "pause")}>
               <Icon name="pause" />
             </IconAction>
           )}
           {t.status === "paused" && (
-            <IconAction label="다시 시작" onClick={() => api.resume([t.id])}>
+            <IconAction label={tr("다시 시작", "Resume")} onClick={() => api.resume([t.id])}>
               <Icon name="play_arrow" />
             </IconAction>
           )}
           {(t.status === "error" || t.status === "canceled") && (
-            <IconAction label="다시 시도" onClick={() => api.retry([t.id])}>
+            <IconAction label={tr("다시 시도", "Retry")} onClick={() => api.retry([t.id])}>
               <Icon name="replay" />
             </IconAction>
           )}
           {link && (
             <>
-              <IconAction label="링크 복사" onClick={() => copyLinks([link])}>
+              <IconAction label={tr("링크 복사", "Copy link")} onClick={() => copyLinks([link])}>
                 <Icon name="content_copy" />
               </IconAction>
-              <IconAction label="브라우저에서 열기" onClick={() => api.openURL(link.url)}>
+              <IconAction label={tr("브라우저에서 열기", "Open in browser")} onClick={() => api.openURL(link.url)}>
                 <Icon name="open_in_new" />
               </IconAction>
             </>
           )}
           {t.kind === "download" && finished && (
             <>
-              <IconAction label="파일 열기" onClick={() => api.openLocal(t.localPath).catch(() => toast.error("파일을 열지 못했습니다"))}>
+              <IconAction label={tr("파일 열기", "Open file")} onClick={() => api.openLocal(t.localPath).catch(() => toast.error(tr("파일을 열지 못했습니다", "Couldn't open the file")))}>
                 <Icon name="file_open" />
               </IconAction>
-              <IconAction label="폴더에서 보기" onClick={() => api.revealLocal(t.localPath)}>
+              <IconAction label={tr("폴더에서 보기", "Show in folder")} onClick={() => api.revealLocal(t.localPath)}>
                 <Icon name="folder_open" />
               </IconAction>
             </>
           )}
           {active || t.status === "paused" ? (
-            <IconAction label="취소" onClick={() => stopTransfers([t.id], "cancel")}>
+            <IconAction label={tr("취소", "Cancel")} onClick={() => stopTransfers([t.id], "cancel")}>
               <Icon name="close" />
             </IconAction>
           ) : (
-            <IconAction label="목록에서 지우기" onClick={() => api.remove([t.id])}>
+            <IconAction label={tr("목록에서 지우기", "Remove from list")} onClick={() => api.remove([t.id])}>
               <Icon name="delete" />
             </IconAction>
           )}
@@ -259,7 +260,10 @@ export function TransferSummaryBar({ compact, onOpen }: { compact?: boolean; onO
   const active = s.uploads + s.downloads;
   const speed = s.upSpeed + s.downSpeed;
   const eta = speed > 0 ? formatDuration((s.size - s.bytes) / speed) : "";
-  const parts = [s.uploads ? `올리기 ${s.uploads}개` : "", s.downloads ? `받기 ${s.downloads}개` : ""].filter(Boolean);
+  const parts = [
+    s.uploads ? tr(`올리기 ${s.uploads}개`, plural(s.uploads, "upload")) : "",
+    s.downloads ? tr(`받기 ${s.downloads}개`, plural(s.downloads, "download")) : "",
+  ].filter(Boolean);
   const Tag = onOpen ? "button" : "div";
   return (
     <Tag
@@ -267,11 +271,11 @@ export function TransferSummaryBar({ compact, onOpen }: { compact?: boolean; onO
       className={clsx("flex w-full items-center gap-5 text-left", compact ? "h-11 border-t border-line bg-panel px-5 hover:bg-raised/40" : "py-4")}
     >
       <div className="min-w-0 shrink-0">
-        <div className={clsx("font-medium", !compact && "text-md")}>{active ? parts.join(", ") : "진행 중인 전송이 없습니다"}</div>
+        <div className={clsx("font-medium", !compact && "text-md")}>{active ? parts.join(", ") : tr("진행 중인 전송이 없습니다", "No active transfers")}</div>
         {!compact && active > 0 && (
           <div className="text-sm text-mute">
             {formatBytes(s.bytes)} / {formatBytes(s.size)}
-            {s.paused > 0 && `, 일시정지 ${s.paused}개`}
+            {s.paused > 0 && tr(`, 일시정지 ${s.paused}개`, `, ${s.paused} paused`)}
           </div>
         )}
       </div>
@@ -289,7 +293,7 @@ export function TransferSummaryBar({ compact, onOpen }: { compact?: boolean; onO
             {formatSpeed(s.downSpeed)}
           </span>
         )}
-        {eta && <span>{eta} 남음</span>}
+        {eta && <span>{tr(`${eta} 남음`, `${eta} left`)}</span>}
       </div>
     </Tag>
   );
@@ -315,14 +319,14 @@ export function TransfersView() {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <ViewHeader title="전송" sub={s.total ? `전체 ${s.total.toLocaleString("ko-KR")}개` : undefined}>
+      <ViewHeader title={tr("전송", "Transfers")} sub={s.total ? tr(`전체 ${s.total.toLocaleString("ko-KR")}개`, `${plural(s.total, "transfer")} total`) : undefined}>
         <LinkButton />
       </ViewHeader>
       {s.total === 0 ? (
         <EmptyState
           icon={<Icon name="check_circle" />}
-          title="전송 목록이 비어 있습니다"
-          body="올리거나 받는 파일이 여기에 나타납니다. 앱을 닫아도 목록은 남아서 다음 실행 때 이어서 할 수 있습니다."
+          title={tr("전송 목록이 비어 있습니다", "No transfers yet")}
+          body={tr("올리거나 받는 파일이 여기에 나타납니다. 앱을 닫아도 목록은 남아서 다음 실행 때 이어서 할 수 있습니다.", "Files you upload or download show up here. The list survives closing the app, so you can pick up where you left off.")}
         />
       ) : (
         <>
@@ -332,8 +336,8 @@ export function TransfersView() {
             </div>
           )}
           <div className="flex h-11 shrink-0 items-center gap-1 border-b border-line px-4">
-            <div role="tablist" aria-label="전송 필터" className="mr-2 flex shrink-0 gap-0.5">
-              {filters.map((f) => (
+            <div role="tablist" aria-label={tr("전송 필터", "Transfer filter")} className="mr-2 flex shrink-0 gap-0.5">
+              {filters().map((f) => (
                 <button
                   key={f.value}
                   role="tab"
@@ -351,56 +355,56 @@ export function TransfersView() {
             </div>
             <div className="ml-auto flex min-w-0 items-center gap-1">
               {s.running + s.queued > 0 && (
-                <button className="btn" onClick={() => stopTransfers(null, "pause")} title="모두 일시정지" aria-label="모두 일시정지">
+                <button className="btn" onClick={() => stopTransfers(null, "pause")} title={tr("모두 일시정지", "Pause all")} aria-label={tr("모두 일시정지", "Pause all")}>
                   <Icon name="pause" className="text-[18px]" />
-                  <span className="hidden xl:inline">모두 일시정지</span>
+                  <span className="hidden xl:inline">{tr("모두 일시정지", "Pause all")}</span>
                 </button>
               )}
               {s.paused > 0 && (
-                <button className="btn" onClick={() => api.resumeAll()} title="모두 다시 시작" aria-label="모두 다시 시작">
+                <button className="btn" onClick={() => api.resumeAll()} title={tr("모두 다시 시작", "Resume all")} aria-label={tr("모두 다시 시작", "Resume all")}>
                   <Icon name="play_arrow" className="text-[18px]" />
-                  <span className="hidden xl:inline">모두 다시 시작</span>
+                  <span className="hidden xl:inline">{tr("모두 다시 시작", "Resume all")}</span>
                 </button>
               )}
               {s.failed > 0 && (
-                <button className="btn" onClick={() => api.retryFailed()} title="실패한 항목 다시 시도" aria-label="실패한 항목 다시 시도">
+                <button className="btn" onClick={() => api.retryFailed()} title={tr("실패한 항목 다시 시도", "Retry failed")} aria-label={tr("실패한 항목 다시 시도", "Retry failed")}>
                   <Icon name="replay" className="text-[18px]" />
-                  <span className="hidden xl:inline">실패한 항목 다시 시도</span>
+                  <span className="hidden xl:inline">{tr("실패한 항목 다시 시도", "Retry failed")}</span>
                 </button>
               )}
               {s.links > 0 && (
-                <button className="btn" onClick={copyUploadLinks} title="올린 파일 링크 복사" aria-label="올린 파일 링크 복사">
+                <button className="btn" onClick={copyUploadLinks} title={tr("올린 파일 링크 복사", "Copy upload links")} aria-label={tr("올린 파일 링크 복사", "Copy upload links")}>
                   <Icon name="content_copy" className="text-[18px]" />
-                  <span className="hidden xl:inline">올린 파일 링크 복사</span>
+                  <span className="hidden xl:inline">{tr("올린 파일 링크 복사", "Copy upload links")}</span>
                 </button>
               )}
               {counts.finished > 0 && (
-                <button className="btn" onClick={() => api.clearFinished()} title="끝난 항목 지우기" aria-label="끝난 항목 지우기">
+                <button className="btn" onClick={() => api.clearFinished()} title={tr("끝난 항목 지우기", "Clear finished")} aria-label={tr("끝난 항목 지우기", "Clear finished")}>
                   <Icon name="delete" className="text-[18px]" />
-                  <span className="hidden xl:inline">끝난 항목 지우기</span>
+                  <span className="hidden xl:inline">{tr("끝난 항목 지우기", "Clear finished")}</span>
                 </button>
               )}
               {counts.active > 0 && (
                 <button
                   className="btn btn-danger"
-                  title="모두 취소"
-                  aria-label="모두 취소"
+                  title={tr("모두 취소", "Cancel all")}
+                  aria-label={tr("모두 취소", "Cancel all")}
                   onClick={() => stopTransfers(null, "cancel")}
                 >
                   <Icon name="block" className="text-[18px]" />
-                  <span className="hidden xl:inline">모두 취소</span>
+                  <span className="hidden xl:inline">{tr("모두 취소", "Cancel all")}</span>
                 </button>
               )}
             </div>
           </div>
-          <ul className="min-h-0 flex-1 overflow-y-auto" aria-label="전송 목록">
+          <ul className="min-h-0 flex-1 overflow-y-auto" aria-label={tr("전송 목록", "Transfer list")}>
             {rows.map((t) => (
               <Row key={t.id} t={t} siteUrl={siteUrl} now={now} />
             ))}
-            {rows.length === 0 && <li className="px-5 py-10 text-center text-sm text-mute">이 분류에 해당하는 전송이 없습니다.</li>}
+            {rows.length === 0 && <li className="px-5 py-10 text-center text-sm text-mute">{tr("이 분류에 해당하는 전송이 없습니다.", "No transfers in this category.")}</li>}
             {hidden > 0 && filter === "all" && (
               <li className="px-5 py-4 text-center text-sm text-faint">
-                대기 중이거나 끝난 항목 {hidden.toLocaleString("ko-KR")}개는 목록에 표시하지 않았습니다.
+                {tr(`대기 중이거나 끝난 항목 ${hidden.toLocaleString("ko-KR")}개는 목록에 표시하지 않았습니다.`, `${plural(hidden, "queued or finished item")} not shown.`)}
               </li>
             )}
           </ul>

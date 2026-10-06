@@ -21,8 +21,9 @@ type Settings struct {
 	AutoResume        bool   `json:"autoResume"`
 	KeepAwake         bool   `json:"keepAwake"`
 	ConfirmDelete     bool   `json:"confirmDelete"`
-	Theme             string `json:"theme"`   // system | dark | light
-	Palette           string `json:"palette"` // nord | solarized, pixeldrain's theme families
+	Language          string `json:"language"` // system | ko | en
+	Theme             string `json:"theme"`    // system | dark | light
+	Palette           string `json:"palette"`  // nord | solarized, pixeldrain's theme families
 	ExternalPlayer    string `json:"externalPlayer"`
 	CopyLinks         bool   `json:"copyLinks"`      // copy upload links when the queue finishes
 	LinkFormat        string `json:"linkFormat"`     // page | direct | markdown
@@ -72,6 +73,7 @@ func defaultSettings() Settings {
 		ListForFolders:    true,
 		KeepAwake:         true,
 		ConfirmDelete:     true,
+		Language:          "system",
 		Theme:             "system",
 		Palette:           "nord",
 		CopyLinks:         true,
@@ -142,6 +144,11 @@ func sanitizeSettings(st Settings) Settings {
 	case "off", "name", "hash":
 	default:
 		st.DuplicateMode = def.DuplicateMode
+	}
+	switch st.Language {
+	case "system", "ko", "en":
+	default:
+		st.Language = def.Language
 	}
 	switch st.Theme {
 	case "system", "dark", "light":

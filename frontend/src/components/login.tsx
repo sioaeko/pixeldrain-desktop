@@ -4,6 +4,7 @@ import { FormEvent, useState } from "react";
 import { api, errMsg } from "../api";
 import type { Account } from "../types";
 import { Segmented, Spinner } from "./ui";
+import { tr } from "../lib/i18n";
 
 /** The app mark: a 4x4 block of pixels with one drained away. */
 export function PixelMark({ size = 4, animate }: { size?: number; animate?: boolean }) {
@@ -56,9 +57,9 @@ export function Login({
       if (r.account) onLoggedIn(r.account);
       else if (r.need === "otp") {
         setNeedOtp(true);
-        setNotice("2단계 인증 앱에 표시된 6자리 코드를 입력하세요.");
+        setNotice(tr("2단계 인증 앱에 표시된 6자리 코드를 입력하세요.", "Enter the 6-digit code from your authenticator app."));
       } else if (r.need === "link") {
-        setNotice("비밀번호 없이 보내면 이메일로 로그인 링크가 전송됩니다. 이 앱에서는 비밀번호나 API 키로 로그인하세요.");
+        setNotice(tr("비밀번호 없이 보내면 이메일로 로그인 링크가 전송됩니다. 이 앱에서는 비밀번호나 API 키로 로그인하세요.", "Without a password, pixeldrain e-mails a login link. In this app, sign in with a password or an API key."));
       }
     } catch (err) {
       setError(errMsg(err));
@@ -75,21 +76,21 @@ export function Login({
       </header>
       <main className="mt-8 w-full max-w-md rounded-lg bg-panel p-8 shadow-[0_0_10px_-4px_rgb(var(--shadow)/0.6)]">
         <div>
-          <h1 className="text-lg font-semibold">pixeldrain 계정 연결</h1>
-          <p className="mt-1 text-sm text-mute">API 키는 이 컴퓨터의 Windows 계정으로 암호화해 저장합니다.</p>
+          <h1 className="text-lg font-semibold">{tr("pixeldrain 계정 연결", "Connect your pixeldrain account")}</h1>
+          <p className="mt-1 text-sm text-mute">{tr("API 키는 이 컴퓨터의 Windows 계정으로 암호화해 저장합니다.", "The API key is stored encrypted with this computer's Windows account.")}</p>
 
           {initError && (
             <div className="mt-5 flex items-start justify-between gap-3 rounded border-danger/40 bg-danger/10 p-3 text-sm">
               <span>{initError}</span>
               <button className="shrink-0 font-medium text-danger hover:underline" onClick={onRetry}>
-                다시 시도
+                {tr("다시 시도", "Retry")}
               </button>
             </div>
           )}
 
           <div className="mt-6">
             <Segmented
-              label="로그인 방법"
+              label={tr("로그인 방법", "Sign-in method")}
               value={mode}
               onChange={(m) => {
                 setMode(m);
@@ -97,8 +98,8 @@ export function Login({
                 setNotice("");
               }}
               options={[
-                { value: "key", label: "API 키" },
-                { value: "account", label: "아이디와 비밀번호" },
+                { value: "key", label: tr("API 키", "API key") },
+                { value: "account", label: tr("아이디와 비밀번호", "Username and password") },
               ]}
             />
           </div>
@@ -106,7 +107,7 @@ export function Login({
           <form onSubmit={submit} className="mt-5 space-y-4">
             {mode === "key" ? (
               <label className="block">
-                <span className="label">API 키</span>
+                <span className="label">{tr("API 키", "API key")}</span>
                 <input
                   className="field mt-1.5"
                   type="password"
@@ -122,22 +123,22 @@ export function Login({
                   className="mt-2 inline-flex items-center gap-1 text-sm text-link hover:underline"
                   onClick={() => api.openURL("https://pixeldrain.com/user/api_keys")}
                 >
-                  pixeldrain에서 API 키 만들기 <Icon name="open_in_new" className="text-[15px]" />
+                  {tr("pixeldrain에서 API 키 만들기 ", "Create an API key on pixeldrain ")}<Icon name="open_in_new" className="text-[15px]" />
                 </button>
               </label>
             ) : (
               <>
                 <label className="block">
-                  <span className="label">사용자 이름 또는 이메일</span>
+                  <span className="label">{tr("사용자 이름 또는 이메일", "Username or e-mail")}</span>
                   <input className="field mt-1.5" autoComplete="username" value={user} onChange={(e) => setUser(e.target.value)} autoFocus />
                 </label>
                 <label className="block">
-                  <span className="label">비밀번호</span>
+                  <span className="label">{tr("비밀번호", "Password")}</span>
                   <input className="field mt-1.5" type="password" autoComplete="current-password" value={pw} onChange={(e) => setPw(e.target.value)} />
                 </label>
                 {needOtp && (
                   <label className="block">
-                    <span className="label">인증 코드</span>
+                    <span className="label">{tr("인증 코드", "Verification code")}</span>
                     <input
                       className="field mt-1.5 tracking-[0.3em]"
                       inputMode="numeric"
@@ -149,7 +150,7 @@ export function Login({
                     />
                   </label>
                 )}
-                <p className="text-sm text-mute">로그인하면 이 앱 전용 API 키가 만들어집니다. 비밀번호는 저장하지 않습니다.</p>
+                <p className="text-sm text-mute">{tr("로그인하면 이 앱 전용 API 키가 만들어집니다. 비밀번호는 저장하지 않습니다.", "Signing in creates an API key just for this app. Your password is not stored.")}</p>
               </>
             )}
 
@@ -166,23 +167,23 @@ export function Login({
               disabled={busy || (mode === "key" ? !key.trim() : !user.trim() || !pw)}
             >
               {busy && <Spinner />}
-              {mode === "key" ? "연결" : "로그인"}
+              {mode === "key" ? tr("연결", "Connect") : tr("로그인", "Sign in")}
             </button>
           </form>
 
           <div className="mt-8 border-t border-line pt-5 text-center">
             <button className="text-sm text-link hover:underline" onClick={onGuest}>
-              로그인 없이 링크로 받기만 하기
+              {tr("로그인 없이 링크로 받기만 하기", "Just download links without signing in")}
             </button>
           </div>
         </div>
       </main>
       <ul className="mt-6 w-full max-w-md space-y-1.5 px-2 text-sm text-mute">
-        <li>끊기면 알아서 다시 시도하고, 앱을 닫아도 전송 목록이 남습니다.</li>
-        <li>올리는 동안 SHA-256을 계산해 pixeldrain의 해시와 맞춰 봅니다.</li>
-        <li>이미 올린 파일은 건너뛰고, 폴더는 목록 하나로 묶습니다.</li>
+        <li>{tr("끊기면 알아서 다시 시도하고, 앱을 닫아도 전송 목록이 남습니다.", "Retries on its own when the connection drops; the transfer list survives closing the app.")}</li>
+        <li>{tr("올리는 동안 SHA-256을 계산해 pixeldrain의 해시와 맞춰 봅니다.", "Computes SHA-256 while uploading and checks it against pixeldrain's hash.")}</li>
+        <li>{tr("이미 올린 파일은 건너뛰고, 폴더는 목록 하나로 묶습니다.", "Skips files you already uploaded and groups folders into one list.")}</li>
       </ul>
-      <p className="mt-auto pt-8 text-xs text-faint">pixeldrain.com과 제휴하지 않은 비공식 클라이언트입니다.</p>
+      <p className="mt-auto pt-8 text-xs text-faint">{tr("pixeldrain.com과 제휴하지 않은 비공식 클라이언트입니다.", "An unofficial client, not affiliated with pixeldrain.com.")}</p>
     </div>
   );
 }

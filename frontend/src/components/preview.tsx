@@ -6,6 +6,7 @@ import { Linkable } from "../lib/links";
 import { toast, useApp } from "../store";
 import { Icon } from "./icon";
 import { Spinner } from "./ui";
+import { tr } from "../lib/i18n";
 
 export interface PreviewItem {
   name: string;
@@ -101,19 +102,19 @@ export function Preview({
         {kind === "text" && (
           <div className="h-full w-full max-w-4xl overflow-auto rounded-lg bg-panel p-5">
             {text === null && !textErr && <Spinner />}
-            {textErr && <p className="text-danger">내용을 불러오지 못했습니다: {textErr}</p>}
+            {textErr && <p className="text-danger">{tr("내용을 불러오지 못했습니다", "Couldn't load the content")}: {textErr}</p>}
             {text !== null && (
               <pre data-selectable className="whitespace-pre-wrap break-words font-sans text-sm leading-relaxed">
                 {text}
-                {item.size > TEXT_LIMIT && <span className="mt-4 block text-faint">처음 512 KB만 표시했습니다.</span>}
+                {item.size > TEXT_LIMIT && <span className="mt-4 block text-faint">{tr("처음 512 KB만 표시했습니다.", "Showing only the first 512 KB.")}</span>}
               </pre>
             )}
           </div>
         )}
         {(kind === "archive" || kind === "other") && (
           <div className="text-center text-mute">
-            <p className="text-md text-ink">미리 볼 수 없는 형식입니다</p>
-            <p className="mt-1 text-sm">받아서 열거나 브라우저에서 확인하세요.</p>
+            <p className="text-md text-ink">{tr("미리 볼 수 없는 형식입니다", "This format can't be previewed")}</p>
+            <p className="mt-1 text-sm">{tr("받아서 열거나 브라우저에서 확인하세요.", "Download it or open it in a browser.")}</p>
           </div>
         )}
         {items.length > 1 && (
@@ -122,8 +123,8 @@ export function Preview({
               className="icon-btn absolute left-3 top-1/2 h-10 w-10 -translate-y-1/2 rounded-full bg-black/40 text-white hover:bg-black/60 disabled:opacity-0"
               onClick={() => onIndex(index - 1)}
               disabled={!canPrev}
-              aria-label="이전 파일"
-              title="이전 파일 (←)"
+              aria-label={tr("이전 파일", "Previous file")}
+              title={tr("이전 파일 (←)", "Previous file (←)")}
             >
               <Icon name="chevron_left" className="text-[28px]" />
             </button>
@@ -131,8 +132,8 @@ export function Preview({
               className="icon-btn absolute right-3 top-1/2 h-10 w-10 -translate-y-1/2 rounded-full bg-black/40 text-white hover:bg-black/60 disabled:opacity-0"
               onClick={() => onIndex(index + 1)}
               disabled={!canNext}
-              aria-label="다음 파일"
-              title="다음 파일 (→)"
+              aria-label={tr("다음 파일", "Next file")}
+              title={tr("다음 파일 (→)", "Next file (→)")}
             >
               <Icon name="chevron_right" className="text-[28px]" />
             </button>
@@ -151,37 +152,37 @@ export function Preview({
               </p>
             )}
           </div>
-          <button className="icon-btn -mr-1 -mt-0.5" onClick={onClose} aria-label="닫기" title="닫기 (Esc)">
+          <button className="icon-btn -mr-1 -mt-0.5" onClick={onClose} aria-label={tr("닫기", "Close")} title={tr("닫기 (Esc)", "Close (Esc)")}>
             <Icon name="close" />
           </button>
         </div>
         <dl className="space-y-3 px-4 text-sm">
-          <Row label="크기" value={`${formatBytes(item.size)} (${formatCount(item.size)} 바이트)`} />
-          {item.uploaded && <Row label="올린 날짜" value={formatDate(item.uploaded)} />}
-          {item.views !== undefined && <Row label="조회" value={formatCount(item.views)} />}
-          {item.downloads !== undefined && <Row label="다운로드" value={formatCount(item.downloads)} />}
-          {item.expiresAt && <Row label="삭제 예정" value={formatDate(item.expiresAt)} />}
+          <Row label={tr("크기", "Size")} value={`${formatBytes(item.size)} (${formatCount(item.size)} ${tr("바이트", "bytes")})`} />
+          {item.uploaded && <Row label={tr("올린 날짜", "Uploaded")} value={formatDate(item.uploaded)} />}
+          {item.views !== undefined && <Row label={tr("조회", "Views")} value={formatCount(item.views)} />}
+          {item.downloads !== undefined && <Row label={tr("다운로드", "Downloads")} value={formatCount(item.downloads)} />}
+          {item.expiresAt && <Row label={tr("삭제 예정", "Deletion date")} value={formatDate(item.expiresAt)} />}
           {item.hash && <Row label="SHA-256" value={item.hash} mono />}
-          {item.link && <Row label="링크" value={item.link.url} mono />}
+          {item.link && <Row label={tr("링크", "Link")} value={item.link.url} mono />}
         </dl>
         <div className="mt-auto flex flex-col gap-2 p-4">
           {item.link && (
             <button className="btn justify-center" onClick={() => copyLinks([item.link!])}>
-              <Icon name="content_copy" /> 링크 복사
+              <Icon name="content_copy" />{tr(" 링크 복사", " Copy link")}
             </button>
           )}
           {item.link && (
             <button className="btn justify-center" onClick={() => api.openURL(item.link!.url)}>
-              <Icon name="open_in_new" /> 브라우저에서 열기
+              <Icon name="open_in_new" />{tr(" 브라우저에서 열기", " Open in browser")}
             </button>
           )}
           {(kind === "video" || kind === "audio") && app?.player && (
             <button className="btn justify-center" onClick={playExternal}>
-              <Icon name="play_arrow" /> 외부 플레이어로 재생
+              <Icon name="play_arrow" />{tr(" 외부 플레이어로 재생", " Play in external player")}
             </button>
           )}
           <button className="btn btn-primary justify-center" onClick={() => onDownload(item)}>
-            <Icon name="download" /> 받기
+            <Icon name="download" />{tr(" 받기", " Download")}
           </button>
         </div>
       </aside>

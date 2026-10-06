@@ -25,6 +25,7 @@ var (
 	procSetThreadExecutionState = kernel32.NewProc("SetThreadExecutionState")
 	procLocalFree               = kernel32.NewProc("LocalFree")
 	procGetDiskFreeSpaceExW     = kernel32.NewProc("GetDiskFreeSpaceExW")
+	procGetUserDefaultUILang    = kernel32.NewProc("GetUserDefaultUILanguage")
 	procCryptProtectData        = crypt32.NewProc("CryptProtectData")
 	procCryptUnprotectData      = crypt32.NewProc("CryptUnprotectData")
 )
@@ -185,4 +186,13 @@ func findPlayer() string {
 		}
 	}
 	return ""
+}
+
+// systemLanguage follows the Windows display language: Korean or English.
+func systemLanguage() string {
+	id, _, _ := procGetUserDefaultUILang.Call()
+	if id&0x3ff == 0x12 { // LANG_KOREAN
+		return "ko"
+	}
+	return "en"
 }

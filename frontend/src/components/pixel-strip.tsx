@@ -2,6 +2,7 @@ import clsx from "clsx";
 import { memo } from "react";
 import { formatBytes } from "../lib/format";
 import type { TransferPhase, TransferStatus } from "../types";
+import { tr } from "../lib/i18n";
 
 interface Props {
   size: number;
@@ -66,7 +67,7 @@ export const PixelStrip = memo(function PixelStrip({ size, done, status, phase, 
       aria-valuemin={0}
       aria-valuemax={100}
       aria-valuenow={Math.round(frac * 100)}
-      title={cellBytes ? `칸 하나 = ${cellBytes}` : undefined}
+      title={cellBytes ? tr(`칸 하나 = ${cellBytes}`, `One cell = ${cellBytes}`) : undefined}
     >
       {Array.from({ length: cells }, (_, i) => {
         const on = showAll || i < full;

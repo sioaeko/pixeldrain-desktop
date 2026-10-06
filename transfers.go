@@ -948,9 +948,9 @@ func (e *permanentError) Unwrap() error { return e.err }
 func permanent(err error) error { return &permanentError{err} }
 
 var (
-	errStalled       = errors.New("전송이 2분 넘게 멈춰 연결을 다시 시작합니다")
-	errServerTimeout = errors.New("서버가 업로드 완료 응답을 보내지 않았습니다")
-	errHashMismatch  = errors.New("SHA-256 해시가 일치하지 않습니다")
+	errStalled       = newError("전송이 2분 넘게 멈춰 연결을 다시 시작합니다", "Transfer stalled for over 2 minutes; reconnecting")
+	errServerTimeout = newError("서버가 업로드 완료 응답을 보내지 않았습니다", "The server never confirmed the upload")
+	errHashMismatch  = newError("SHA-256 해시가 일치하지 않습니다", "SHA-256 hash mismatch")
 )
 
 func retryable(err error) bool {
@@ -1033,7 +1033,7 @@ func (m *transferManager) withRetries(ctx context.Context, t *job, tries int, at
 				offlineSince = time.Now()
 			}
 			if time.Since(offlineSince) < maxOfflineWait {
-				if werr := wait(offlineDelay, "인터넷 연결을 기다리는 중"); werr != nil {
+				if werr := wait(offlineDelay, L("인터넷 연결을 기다리는 중", "Waiting for the internet connection")); werr != nil {
 					return werr
 				}
 				continue
@@ -1050,7 +1050,7 @@ func (m *transferManager) withRetries(ctx context.Context, t *job, tries int, at
 		}
 	}
 	if tries > 1 {
-		return fmt.Errorf("%d번 시도했지만 실패했습니다: %w", tries, lastErr)
+		return fmt.Errorf(L("%d번 시도했지만 실패했습니다: %w", "Failed after %d attempts: %w"), tries, lastErr)
 	}
 	return lastErr
 }

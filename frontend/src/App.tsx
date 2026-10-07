@@ -62,7 +62,23 @@ export default function App() {
   useEffect(() => {
     subscribeTransfers();
     api.getTransfers().then((s) => useTransfers.setState({ ...s, items: s.items ?? [] }));
-    init().then(() => api.takeLaunchArgs().then(handleLaunch));
+    init().then(() => {
+      api.takeLaunchArgs().then(handleLaunch);
+      if (useApp.getState().app?.settings.checkUpdates) {
+        // Best effort: being offline or rate-limited by GitHub is not worth a message.
+        api
+          .checkUpdate()
+          .then((u) => {
+            if (!u.available) return;
+            useApp.getState().setUpdate(u);
+            toast.info(tr(`새 버전 ${u.latest}이(가) 나왔습니다`, `Version ${u.latest} is available`), {
+              action: { label: tr("받으러 가기", "Get it"), run: () => api.openURL(u.url) },
+              duration: 10000,
+            });
+          })
+          .catch(() => {});
+      }
+    });
     const offs = [
       EventsOn("auth:expired", () => {
         toast.error(tr("API 키가 더 이상 유효하지 않습니다. 다시 로그인하세요", "The API key is no longer valid. Sign in again"));

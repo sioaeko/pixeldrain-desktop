@@ -1,0 +1,68 @@
+name: Release
+
+# Push a tag like v1.2.0 to build Pixeldrain.exe and publish it as a release.
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      # The tag must match the version compiled into the app (update checks
+      # compare against it) and the one written into the exe's properties.
+      - name: Check version
+        shell: bash
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          app=$(sed -n 's/^const appVersion = "\(.*\)"/\1/p' app.go)
+          exe=$(sed -n 's/.*"productVersion": "\(.*\)".*/\1/p' wails.json)
+          echo "tag=$tag app.go=$app wails.json=$exe"
+          if [ "$tag" != "$app" ] || [ "$tag" != "$exe" ]; then
+            echo "::error::Tag $GITHUB_REF_NAME does not match appVersion ($app) and productVersion ($exe)"
+            exit 1
+          fi
+
+      - name: Vet and test
+        shell: bash
+        run: |
+          go vet ./...
+          go test ./...
+
+      - name: Install Wails CLI
+        run: go install github.com/wailsapp/wails/v2/cmd/wails@v2.16.0
+
+      - name: Build
+        run: wails build
+
+      - name: Publish
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          sum=$(sha256sum build/bin/Pixeldrain.exe | cut -d' ' -f1)
+          echo "Pixeldrain.exe SHA-256: $sum"
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            # A release written by hand keeps its notes; only the exe is replaced.
+            gh release upload "$GITHUB_REF_NAME" build/bin/Pixeldrain.exe --clobber
+          else
+            printf 'Download **Pixeldrain.exe** below and run it (Windows 10/11 x64, WebView2 runtime). The build is unsigned, so SmartScreen may warn you: click **More info → Run anyway**.\n\nSHA-256: `%s`\n' "$sum" > notes.md
+            gh release create "$GITHUB_REF_NAME" build/bin/Pixeldrain.exe \
+              --title "Pixeldrain Desktop ${GITHUB_REF_NAME#v}" \
+              --notes-file notes.md --generate-notes
+          fi

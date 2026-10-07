@@ -29,6 +29,7 @@ type Settings struct {
 	LinkFormat        string `json:"linkFormat"`     // page | direct | markdown
 	Notify            bool   `json:"notify"`         // Windows notification when transfers finish
 	WatchClipboard    bool   `json:"watchClipboard"` // offer pixeldrain links found on the clipboard
+	CheckUpdates      bool   `json:"checkUpdates"`   // look for a newer GitHub release on start
 }
 
 // WindowState remembers the main window geometry between runs.
@@ -80,6 +81,7 @@ func defaultSettings() Settings {
 		LinkFormat:        "page",
 		Notify:            true,
 		WatchClipboard:    true,
+		CheckUpdates:      true,
 	}
 }
 

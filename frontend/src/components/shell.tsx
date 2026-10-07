@@ -54,6 +54,7 @@ function Sidebar({ onLogin, onHelp }: { onLogin: () => void; onHelp: () => void 
   const openSettings = useApp((s) => s.openSettings);
   const s = useTransfers((st) => st.summary);
   const acc = app.account;
+  const update = useApp((st) => st.update);
   const active = s.uploads + s.downloads;
 
   return (
@@ -80,6 +81,17 @@ function Sidebar({ onLogin, onHelp }: { onLogin: () => void; onHelp: () => void 
             {acc.fsAccess && <Quota label={tr("파일시스템", "Filesystem")} used={acc.fsUsed} limit={acc.fsLimit} />}
             {acc.transferCap > 0 && <Quota label={tr("이번 달 전송", "Monthly transfer")} used={acc.transferUsed} limit={acc.transferCap} />}
           </div>
+        )}
+        {update && (
+          <button
+            className="flex w-full items-center gap-2 rounded bg-hl/15 px-3 py-2 text-left text-sm text-ink hover:bg-hl/25"
+            onClick={() => api.openURL(update.url)}
+            title={tr(`지금 버전 ${update.current}`, `You have ${update.current}`)}
+          >
+            <Icon name="system_update_alt" className="text-[18px] text-hl" />
+            <span className="min-w-0 flex-1 truncate">{tr(`새 버전 ${update.latest}`, `Update to ${update.latest}`)}</span>
+            <Icon name="open_in_new" className="text-[15px] text-faint" />
+          </button>
         )}
         <div className="flex items-center gap-2 border-t border-line pt-3">
           {acc ? (

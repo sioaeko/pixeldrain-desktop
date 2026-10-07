@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { EventsOn } from "../wailsjs/runtime/runtime";
-import type { Account, AppState, Settings, TransferState } from "./types";
+import type { Account, AppState, Settings, TransferState, UpdateInfo } from "./types";
 
 export type View = "files" | "lists" | "fs" | "transfers";
 
@@ -11,6 +11,7 @@ interface AppStore {
   settingsOpen: boolean;
   linkDialog: { open: boolean; text: string };
   confirmQuit: boolean;
+  update: UpdateInfo | null; // a newer release, when one was found
   setApp: (s: AppState) => void;
   setAccount: (a: Account | null) => void;
   setSettings: (s: Settings) => void;
@@ -20,6 +21,7 @@ interface AppStore {
   openLinks: (text?: string) => void;
   closeLinks: () => void;
   setConfirmQuit: (v: boolean) => void;
+  setUpdate: (u: UpdateInfo | null) => void;
 }
 
 export const useApp = create<AppStore>((set) => ({
@@ -29,6 +31,7 @@ export const useApp = create<AppStore>((set) => ({
   settingsOpen: false,
   linkDialog: { open: false, text: "" },
   confirmQuit: false,
+  update: null,
   setApp: (app) => set({ app }),
   setAccount: (account) => set((s) => (s.app ? { app: { ...s.app, account } } : {})),
   setSettings: (settings) => set((s) => (s.app ? { app: { ...s.app, settings } } : {})),
@@ -38,6 +41,7 @@ export const useApp = create<AppStore>((set) => ({
   openLinks: (text = "") => set({ linkDialog: { open: true, text } }),
   closeLinks: () => set({ linkDialog: { open: false, text: "" } }),
   setConfirmQuit: (confirmQuit) => set({ confirmQuit }),
+  setUpdate: (update) => set({ update }),
 }));
 
 const emptyTransfers: TransferState = {

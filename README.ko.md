@@ -16,6 +16,7 @@
 ![Wails](https://img.shields.io/badge/Wails-v2-df0000?style=flat-square)
 ![React](https://img.shields.io/badge/React-18-61dafb?style=flat-square&logo=react&logoColor=black)
 [![License](https://img.shields.io/github/license/sioaeko/pixeldrain-desktop?style=flat-square&color=4c566a)](LICENSE)
+[![CI](https://img.shields.io/github/actions/workflow/status/sioaeko/pixeldrain-desktop/ci.yml?branch=main&style=flat-square&label=CI)](https://github.com/sioaeko/pixeldrain-desktop/actions/workflows/ci.yml)
 
 <img src="docs/screenshots/ko/transfers.png" alt="대용량 파일 4개(12.6 GB)를 파일시스템에 올리는 전송 화면" width="900">
 
@@ -43,6 +44,7 @@
 - Windows 10/11 x64, [WebView2 런타임](https://developer.microsoft.com/microsoft-edge/webview2/) 필요(Windows 11에는 기본 포함)
 - 서명되지 않은 개인 빌드라 SmartScreen 경고가 뜰 수 있습니다. **추가 정보 → 실행**을 누르세요.
 - 로그인은 [API 키](https://pixeldrain.com/user/api_keys)를 붙여 넣거나 아이디/비밀번호(2단계 인증 포함)로 합니다. 로그인 없이 링크 다운로드만 쓸 수도 있습니다.
+- 시작할 때 GitHub에 새 버전이 있는지 묻고, 있으면 사이드바에 알려 줍니다. 계정 정보는 보내지 않으며 설정에서 끌 수 있습니다.
 
 ## 스크린샷
 
@@ -185,6 +187,20 @@ API 키 `test-key` 또는 아이디/비밀번호 `demo`/`demo`로 로그인합�
 PD_LARGE=1 PD_LARGE_GB=12 PD_LARGE_DIR='D:\pdtest' go test -run TestLargeTransfers -v -timeout 2h .
 ```
 
+### 릴리스 만들기
+
+`app.go`의 `appVersion`과 `wails.json`의 `productVersion`을 올려 커밋한 뒤, 같은 번호의 태그를 푸시합니다.
+
+```bash
+git tag v1.2.0
+```
+
+```bash
+git push origin v1.2.0
+```
+
+[`release.yml`](.github/workflows/release.yml)이 버전이 태그와 맞는지 확인하고, 테스트를 돌린 뒤 `Pixeldrain.exe`를 빌드해 GitHub 릴리스로 올립니다. `main`에 푸시할 때마다 [`ci.yml`](.github/workflows/ci.yml)도 돌아가며, 빌드한 exe를 14일 동안 아티팩트로 보관합니다.
+
 ## 구조
 
 | 경로 | 역할 |
@@ -196,6 +212,8 @@ PD_LARGE=1 PD_LARGE_GB=12 PD_LARGE_DIR='D:\pdtest' go test -run TestLargeTransfe
 | `links.go` | `/u/`, `/l/`, `/d/` 링크 해석과 공유 폴더 재귀 탐색 |
 | `media.go` | 썸네일과 미리 보기용 루프백 프록시 (API 키를 페이지에 노출하지 않음) |
 | `app.go` | 프런트엔드에 노출하는 메서드 |
+| `update.go` | GitHub에서 새 버전 확인 |
+| `i18n.go`, `frontend/src/lib/i18n.ts` | 한국어·영어 문구 |
 | `internal/mockpd`, `cmd/mockserver` | 테스트와 개발용 가짜 pixeldrain API |
 | `frontend/src/components` | 화면 (`files-view`, `lists-view`, `fs-view`, `transfers-view`, `pixel-strip` …) |
 

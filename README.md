@@ -16,6 +16,7 @@ Streams files of tens of gigabytes straight from disk, resends them on its own w
 ![Wails](https://img.shields.io/badge/Wails-v2-df0000?style=flat-square)
 ![React](https://img.shields.io/badge/React-18-61dafb?style=flat-square&logo=react&logoColor=black)
 [![License](https://img.shields.io/github/license/sioaeko/pixeldrain-desktop?style=flat-square&color=4c566a)](LICENSE)
+[![CI](https://img.shields.io/github/actions/workflow/status/sioaeko/pixeldrain-desktop/ci.yml?branch=main&style=flat-square&label=CI)](https://github.com/sioaeko/pixeldrain-desktop/actions/workflows/ci.yml)
 
 <img src="docs/screenshots/en/transfers.png" alt="Transfers view uploading four large files (12.6 GB) to the filesystem" width="900">
 
@@ -43,6 +44,7 @@ Get `Pixeldrain.exe` from [**Releases**](https://github.com/sioaeko/pixeldrain-d
 - Windows 10/11 x64 with the [WebView2 runtime](https://developer.microsoft.com/microsoft-edge/webview2/) (built into Windows 11)
 - The build is unsigned, so SmartScreen may warn you. Click **More info → Run anyway**.
 - Sign in by pasting an [API key](https://pixeldrain.com/user/api_keys), or with your username and password (two-factor authentication supported). You can also skip sign-in and only download links.
+- On start the app asks GitHub whether a newer release exists and shows it in the sidebar. Nothing about your account is sent; turn it off in Settings.
 
 ## Screenshots
 
@@ -185,6 +187,20 @@ Multi-gigabyte tests are opt-in. The mock server receives over TLS and only hash
 PD_LARGE=1 PD_LARGE_GB=12 PD_LARGE_DIR='D:\pdtest' go test -run TestLargeTransfers -v -timeout 2h .
 ```
 
+### Releasing
+
+Bump `appVersion` in `app.go` and `productVersion` in `wails.json`, commit, then push a matching tag:
+
+```bash
+git tag v1.2.0
+```
+
+```bash
+git push origin v1.2.0
+```
+
+[`release.yml`](.github/workflows/release.yml) checks that the versions match the tag, runs the tests, builds `Pixeldrain.exe` and publishes it as a GitHub release. Every push to `main` also runs [`ci.yml`](.github/workflows/ci.yml) and keeps the built exe as an artifact for 14 days.
+
 ## Project layout
 
 | Path | Role |
@@ -196,6 +212,8 @@ PD_LARGE=1 PD_LARGE_GB=12 PD_LARGE_DIR='D:\pdtest' go test -run TestLargeTransfe
 | `links.go` | Parsing `/u/`, `/l/`, `/d/` links and walking shared folders recursively |
 | `media.go` | Loopback proxy for thumbnails and previews (keeps the API key out of the page) |
 | `app.go` | Methods exposed to the frontend |
+| `update.go` | Checks GitHub for a newer release |
+| `i18n.go`, `frontend/src/lib/i18n.ts` | Korean and English strings |
 | `internal/mockpd`, `cmd/mockserver` | Mock pixeldrain API for tests and development |
 | `frontend/src/components` | UI (`files-view`, `lists-view`, `fs-view`, `transfers-view`, `pixel-strip` …) |
 

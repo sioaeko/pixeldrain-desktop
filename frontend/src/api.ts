@@ -12,6 +12,7 @@ import type {
   LoginResult,
   Settings,
   TransferState,
+  UpdateInfo,
   UploadTarget,
 } from "./types";
 
@@ -75,6 +76,7 @@ export const api = {
   copyText: (s: string): Promise<void> => g.CopyText(s),
   playExternal: (id: string, fsPath: string, name: string): Promise<void> => g.PlayExternal(id, fsPath, name),
   forceQuit: (): Promise<void> => g.ForceQuit(),
+  checkUpdate: (): Promise<UpdateInfo> => g.CheckUpdate(),
 };
 
 export function errMsg(e: unknown): string {

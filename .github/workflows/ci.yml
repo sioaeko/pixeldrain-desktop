@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Vet and test
+        shell: bash
+        run: |
+          go vet ./...
+          go test ./...
+
+      - name: Install Wails CLI
+        run: go install github.com/wailsapp/wails/v2/cmd/wails@v2.16.0
+
+      # Builds the frontend (tsc + vite) and the Windows executable.
+      - name: Build
+        run: wails build
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Pixeldrain-${{ github.sha }}
+          path: build/bin/Pixeldrain.exe
+          retention-days: 14

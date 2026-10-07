@@ -278,6 +278,12 @@ export function SettingsDialog({ onLogout }: { onLogout: (revoke: boolean) => vo
             ]}
           />
         </div>
+        <Switch
+          label={tr("시작할 때 새 버전 확인", "Check for updates on start")}
+          hint={tr("GitHub에서 최신 릴리스 번호만 확인합니다. 계정 정보는 보내지 않습니다.", "Only asks GitHub for the latest release number. No account data is sent.")}
+          checked={s.checkUpdates}
+          onChange={(v) => up({ checkUpdates: v })}
+        />
         <Switch label={tr("삭제하기 전에 묻기", "Ask before deleting")} checked={s.confirmDelete} onChange={(v) => up({ confirmDelete: v })} />
         <div className="py-2">
           <div className="mb-1">{tr("외부 플레이어", "External player")}</div>

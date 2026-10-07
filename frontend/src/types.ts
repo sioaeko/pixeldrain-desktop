@@ -20,6 +20,14 @@ export interface Settings {
   linkFormat: "page" | "direct" | "markdown";
   notify: boolean;
   watchClipboard: boolean;
+  checkUpdates: boolean;
+}
+
+export interface UpdateInfo {
+  available: boolean;
+  current: string;
+  latest: string;
+  url: string;
 }
 
 export interface Account {

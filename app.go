@@ -16,7 +16,7 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
-const appVersion = "1.1.0"
+const appVersion = "1.2.0"
 
 // App is bound to the frontend; its exported methods become JS functions.
 type App struct {

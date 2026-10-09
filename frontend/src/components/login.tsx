@@ -70,7 +70,7 @@ export function Login({
 
   return (
     <div className="checkers flex h-full flex-col items-center overflow-y-auto px-6 py-10">
-      <header className="flex items-center gap-3">
+      <header className="mt-auto flex items-center gap-3">
         <PixelMark size={6} animate />
         <span className="text-lg font-semibold text-ink">Pixeldrain Desktop</span>
       </header>
@@ -178,11 +178,6 @@ export function Login({
           </div>
         </div>
       </main>
-      <ul className="mt-6 w-full max-w-md space-y-1.5 px-2 text-sm text-mute">
-        <li>{tr("끊기면 알아서 다시 시도하고, 앱을 닫아도 전송 목록이 남습니다.", "Retries on its own when the connection drops; the transfer list survives closing the app.")}</li>
-        <li>{tr("올리는 동안 SHA-256을 계산해 pixeldrain의 해시와 맞춰 봅니다.", "Computes SHA-256 while uploading and checks it against pixeldrain's hash.")}</li>
-        <li>{tr("이미 올린 파일은 건너뛰고, 폴더는 목록 하나로 묶습니다.", "Skips files you already uploaded and groups folders into one list.")}</li>
-      </ul>
       <p className="mt-auto pt-8 text-xs text-faint">{tr("pixeldrain.com과 제휴하지 않은 비공식 클라이언트입니다.", "An unofficial client, not affiliated with pixeldrain.com.")}</p>
     </div>
   );

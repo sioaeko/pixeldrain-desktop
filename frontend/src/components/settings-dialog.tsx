@@ -169,8 +169,7 @@ export function SettingsDialog({ onLogout }: { onLogout: (revoke: boolean) => vo
         <div className="py-2">
           <div className="mb-1">{tr("이미 있는 파일 건너뛰기", "Skip files that already exist")}</div>
           <p className="mb-2 text-sm text-mute">
-            {s.duplicateMode === "off" && tr("항상 새로 올립니다.", "Always upload again.")}
-            {s.duplicateMode === "name" && tr("이름과 크기가 같은 파일이 계정에 있으면 올리지 않습니다.", "Skips the upload when your account has a file with the same name and size.")}
+            {s.duplicateMode === "off" && tr("내 파일에는 새로 올립니다. 파일시스템의 같은 경로에 파일이 있으면 기존 파일을 보존하고 중단합니다.", "Uploads a new copy to My Files. In the filesystem, an existing destination is kept and the upload stops.")}
             {s.duplicateMode === "hash" && tr("올리기 전에 파일을 한 번 읽어 내용이 같은 파일이 있는지 SHA-256으로 확인합니다. 정확하지만 큰 파일은 시간이 걸립니다.", "Reads the file once before uploading and checks for identical content by SHA-256. Exact, but slow for big files.")}
           </p>
           <Segmented
@@ -179,7 +178,6 @@ export function SettingsDialog({ onLogout }: { onLogout: (revoke: boolean) => vo
             onChange={(v) => up({ duplicateMode: v })}
             options={[
               { value: "off", label: tr("끄기", "Off") },
-              { value: "name", label: tr("이름과 크기", "Name and size") },
               { value: "hash", label: tr("내용(SHA-256)", "Content (SHA-256)") },
             ]}
           />

@@ -74,7 +74,8 @@ local file ──stream (+ SHA-256)──▶ PUT ──▶ pixeldrain
 - **Verification**: SHA-256 is computed while sending and compared with the hash pixeldrain reports. On a mismatch the bad copy is deleted and the file is uploaded again.
 - **Retries**: dropped connections, 5xx and 429 responses are retried after 2, 4, 8… seconds (5 times by default). If no bytes move for 2 minutes, the connection is closed and retried.
 - **Offline wait**: when the internet goes down, the app waits for it to come back (up to 24 hours) without using up retries.
-- **Duplicate skipping**: files that already exist are skipped, compared by name and size or, if you choose, by SHA-256 content.
+- **Duplicate skipping**: only matching SHA-256 content is skipped. The legacy name-and-size setting is migrated to SHA-256.
+- **Existing file protection**: filesystem uploads stop with an error when a different file occupies the destination. Change the name or upload folder and retry. New files are uploaded to a temporary path, then renamed into place.
 - **Restart recovery**: the transfer list is saved to disk. Reopen the app and the remaining transfers continue. Downloads resume from `.pdpart`; uploads start over from the beginning.
 - **Early checks**: files over your plan's size limit (10 GB on the free plan) are rejected before anything is sent. Pausing or cancelling a big upload tells you how much will have to be resent and asks first.
 - **Also**: upload speed limit and sleep prevention during transfers. Uploading a folder to My Files automatically creates a list named after the folder, so it can be shared with one link.

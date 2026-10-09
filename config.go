@@ -15,7 +15,7 @@ type Settings struct {
 	ParallelDownloads int    `json:"parallelDownloads"`
 	Retries           int    `json:"retries"`
 	VerifyHash        bool   `json:"verifyHash"`
-	DuplicateMode     string `json:"duplicateMode"` // off | name | hash
+	DuplicateMode     string `json:"duplicateMode"` // off | hash (legacy name migrates to hash)
 	UploadLimitMB     int    `json:"uploadLimitMB"` // MB/s, 0 = unlimited
 	ListForFolders    bool   `json:"listForFolders"`
 	AutoResume        bool   `json:"autoResume"`
@@ -70,7 +70,7 @@ func defaultSettings() Settings {
 		ParallelDownloads: 3,
 		Retries:           5,
 		VerifyHash:        true,
-		DuplicateMode:     "name",
+		DuplicateMode:     "hash",
 		ListForFolders:    true,
 		KeepAwake:         true,
 		ConfirmDelete:     true,
@@ -143,7 +143,7 @@ func sanitizeSettings(st Settings) Settings {
 		st.UploadLimitMB = 0
 	}
 	switch st.DuplicateMode {
-	case "off", "name", "hash":
+	case "off", "hash":
 	default:
 		st.DuplicateMode = def.DuplicateMode
 	}

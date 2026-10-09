@@ -219,7 +219,7 @@ func (m *transferManager) scheduler(ctx context.Context) {
 		}
 		for i := m.next; i < len(m.items); i++ {
 			t := m.items[i]
-			if t.Status != statusQueued || m.running[t.Kind] >= limits[t.Kind] {
+			if t.Status != statusQueued || t.cancel != nil || m.running[t.Kind] >= limits[t.Kind] {
 				continue
 			}
 			tctx, cancel := context.WithCancel(ctx)
@@ -254,9 +254,19 @@ func (m *transferManager) run(ctx context.Context, t *job) {
 	}
 	m.mu.Lock()
 	m.running[t.Kind]--
+	// Keep ownership until the canceled worker has closed and cleaned its file.
+	if t.Status == statusCanceled && t.Kind == "download" {
+		_ = os.Remove(t.LocalPath + partSuffix)
+	}
+	if t.cancel != nil {
+		t.cancel()
+	}
 	t.cancel = nil
 	t.Phase, t.RetryAt, t.Speed = "", 0, 0
 	switch {
+	case t.Status == statusQueued && ctx.Err() != nil && err != nil:
+		// Resume/retry arrived while this worker was still stopping.
+		m.requeueLocked(t)
 	case t.Status == statusPaused:
 		if t.Kind == "upload" { // pixeldrain cannot resume uploads
 			t.done.Store(0)
@@ -284,9 +294,6 @@ func (m *transferManager) run(ctx context.Context, t *job) {
 	m.touch()
 	m.notify()
 
-	if status == statusCanceled && t.Kind == "download" {
-		_ = os.Remove(t.LocalPath + partSuffix)
-	}
 	if status == statusDone && t.Kind == "upload" {
 		key := targetFiles
 		if t.Target == targetFS {
@@ -674,11 +681,10 @@ func (m *transferManager) each(ids []string, fn func(t *job)) {
 }
 
 func (m *transferManager) cancel(ids []string) {
-	var removeParts []string
 	m.each(ids, func(t *job) {
-		// Paused downloads have no goroutine left to clean up their part file.
-		if t.Status == statusPaused && t.Kind == "download" {
-			removeParts = append(removeParts, t.LocalPath+partSuffix)
+		// Only clean up here when no worker still owns the file.
+		if isActive(t.Status) && t.cancel == nil && t.Kind == "download" {
+			_ = os.Remove(t.LocalPath + partSuffix)
 			t.FinishedAt = time.Now().UnixMilli()
 		}
 		if t.Status == statusQueued || t.Status == statusPaused {
@@ -686,9 +692,6 @@ func (m *transferManager) cancel(ids []string) {
 		}
 		m.stopLocked(t, statusCanceled)
 	})
-	for _, p := range removeParts {
-		_ = os.Remove(p)
-	}
 }
 
 func (m *transferManager) pause(ids []string) {
@@ -709,6 +712,12 @@ func (m *transferManager) resume(ids []string) {
 }
 
 func (m *transferManager) requeueLocked(t *job) {
+	if t.cancel != nil {
+		// The old worker still reads these fields. Reset them when it exits.
+		t.Status = statusQueued
+		m.next = 0
+		return
+	}
 	t.Status, t.Error, t.Note, t.FinishedAt, t.Verified = statusQueued, "", "", 0, false
 	t.reported = false
 	if t.Kind == "upload" {

@@ -529,8 +529,12 @@ func (c *Client) FSPut(ctx context.Context, p string, body io.Reader, size int64
 		return nil, readAPIError(res)
 	}
 	var n pdNode
-	b, _ := io.ReadAll(io.LimitReader(res.Body, 1<<20))
-	_ = json.Unmarshal(b, &n)
+	if err := json.NewDecoder(io.LimitReader(res.Body, 1<<20)).Decode(&n); err != nil {
+		return nil, fmt.Errorf("invalid filesystem upload response: %w", err)
+	}
+	if n.Type != "file" || n.FileSize != size {
+		return nil, newError("파일시스템 업로드 응답의 파일 정보가 올바르지 않습니다", "Invalid file metadata in the filesystem upload response")
+	}
 	return &n, nil
 }
 

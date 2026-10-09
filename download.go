@@ -170,8 +170,32 @@ func (a *App) downloadAttempt(ctx context.Context, t *job, part string, verify b
 	defer cancel(nil)
 	m.setPhase(t, phaseSending)
 	t.done.Store(off)
+	// Cover the initial response (including an error body), not just file bytes.
+	var last atomic.Int64
+	last.Store(time.Now().UnixNano())
+	watchDone := make(chan struct{})
+	go func() {
+		defer close(watchDone)
+		tk := time.NewTicker(min(2*time.Second, downloadStallTimeout))
+		defer tk.Stop()
+		for {
+			select {
+			case <-actx.Done():
+				return
+			case <-tk.C:
+				if time.Since(time.Unix(0, last.Load())) > downloadStallTimeout {
+					cancel(errStalled)
+					return
+				}
+			}
+		}
+	}()
+	defer func() { cancel(nil); <-watchDone }()
 	res, err := a.client.Open(actx, a.downloadURL(t), off, "")
 	if err != nil {
+		if cause := context.Cause(actx); cause != nil && ctx.Err() == nil {
+			return cause
+		}
 		return classifyDownloadError(err)
 	}
 	defer res.Body.Close()
@@ -203,23 +227,7 @@ func (a *App) downloadAttempt(ctx context.Context, t *job, part string, verify b
 	}
 	t.done.Store(off)
 
-	var last atomic.Int64
 	last.Store(time.Now().UnixNano())
-	go func() {
-		tk := time.NewTicker(2 * time.Second)
-		defer tk.Stop()
-		for {
-			select {
-			case <-actx.Done():
-				return
-			case <-tk.C:
-				if time.Since(time.Unix(0, last.Load())) > downloadStallTimeout {
-					cancel(errStalled)
-					return
-				}
-			}
-		}
-	}()
 	var w io.Writer = out
 	if h != nil {
 		w = io.MultiWriter(out, h)

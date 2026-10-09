@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
@@ -9,6 +10,7 @@ import (
 	"hash"
 	"io"
 	"io/fs"
+	"net/url"
 	"os"
 	"path"
 	"path/filepath"
@@ -198,7 +200,7 @@ func (a *App) uploadFile(ctx context.Context, t *job) (bool, error) {
 
 	// Exact duplicate detection needs the local hash before uploading.
 	var localHash string
-	if st.DuplicateMode == "hash" {
+	if st.DuplicateMode == "hash" || t.Target == targetFS {
 		if localHash = a.hashes.get(t.LocalPath, size, mod); localHash == "" {
 			m.setPhase(t, phaseHashing)
 			t.done.Store(0)
@@ -212,20 +214,35 @@ func (a *App) uploadFile(ctx context.Context, t *job) (bool, error) {
 		}
 		m.mutate(t, func() { t.Hash = localHash })
 	}
-	if st.DuplicateMode != "off" {
+	if st.DuplicateMode != "off" && t.Target != targetFS {
 		if skipped, err := a.skipIfExists(ctx, t, size, localHash); err != nil || skipped {
 			return skipped, err
 		}
 	}
 
 	var remoteID, remoteHash, sum string
-	err = m.withRetries(ctx, t, st.Retries+1, func(int) error {
+	var skipped bool
+	err = m.withRetries(ctx, t, st.Retries+1, func(attempt int) error {
+		if t.Target == targetFS {
+			checkHash := localHash
+			if st.DuplicateMode == "off" && attempt == 1 {
+				checkHash = ""
+			}
+			var checkErr error
+			skipped, checkErr = a.skipIfExists(ctx, t, size, checkHash)
+			if skipped || checkErr != nil {
+				return checkErr
+			}
+		}
 		var aerr error
 		remoteID, remoteHash, sum, aerr = a.uploadAttempt(ctx, t, size, st.VerifyHash)
 		return aerr
 	})
 	if err != nil {
 		return false, err
+	}
+	if skipped {
+		return true, nil
 	}
 	verified := st.VerifyHash && remoteHash != "" && strings.EqualFold(remoteHash, sum)
 	note := ""
@@ -251,7 +268,7 @@ func (a *App) uploadFile(ctx context.Context, t *job) (bool, error) {
 }
 
 // skipIfExists marks the upload skipped when the same file is already on
-// pixeldrain: same name and size, or the same SHA-256 when it is known.
+// pixeldrain. A matching size alone is never proof of identical content.
 func (a *App) skipIfExists(ctx context.Context, t *job, size int64, localHash string) (bool, error) {
 	m := a.transfers
 	if t.Target == targetFS {
@@ -263,24 +280,24 @@ func (a *App) skipIfExists(ctx context.Context, t *job, size int64, localHash st
 			if ctx.Err() != nil {
 				return false, ctx.Err()
 			}
-			return false, nil // the upload itself will surface real problems
+			return false, err // fail closed when the destination cannot be checked
 		}
 		n := st.node()
 		if n.Type != "file" {
 			return false, permanent(newError("같은 이름의 폴더가 이미 있습니다", "A folder with the same name already exists"))
 		}
-		same := n.FileSize == size
-		if localHash != "" && n.SHA256 != "" {
-			same = strings.EqualFold(localHash, n.SHA256)
-		}
+		same := n.FileSize == size && localHash != "" && n.SHA256 != "" && strings.EqualFold(localHash, n.SHA256)
 		if !same {
-			return false, nil // overwrite the different file
+			return false, filesystemConflict(t.RemotePath)
 		}
 		m.mutate(t, func() {
 			t.Note = L("같은 파일이 이미 있어 건너뛰었습니다", "Skipped: the same file already exists")
 			t.Verified = localHash != "" && strings.EqualFold(localHash, n.SHA256)
 		})
 		return true, nil
+	}
+	if localHash == "" {
+		return false, nil
 	}
 	id, err := a.index.find(ctx, a.client, t.Name, size, localHash)
 	if err != nil {
@@ -301,6 +318,10 @@ func (a *App) skipIfExists(ctx context.Context, t *job, size int64, localHash st
 		t.Verified = localHash != ""
 	})
 	return true, nil
+}
+
+func filesystemConflict(p string) error {
+	return permanent(fmt.Errorf(L("같은 경로의 기존 파일을 보존했습니다: %s. 파일 이름이나 업로드 폴더를 바꿔 다시 시도하세요", "Kept the existing file at %s. Change the file name or upload folder and try again"), p))
 }
 
 // uploadAttempt sends the whole file once. pixeldrain has no resumable
@@ -327,7 +348,9 @@ func (a *App) uploadAttempt(ctx context.Context, t *job, size int64, verify bool
 	if size == 0 {
 		body.finished.Store(true)
 	}
+	watchDone := make(chan struct{})
 	go func() {
+		defer close(watchDone)
 		tk := time.NewTicker(2 * time.Second)
 		defer tk.Stop()
 		var sentAt time.Time
@@ -352,10 +375,24 @@ func (a *App) uploadAttempt(ctx context.Context, t *job, size int64, verify bool
 			}
 		}
 	}()
+	defer func() { cancel(nil); <-watchDone }()
 
+	fsPath := t.RemotePath
 	if t.Target == targetFS {
+		// PUT overwrites. Upload to a unique staging path, then use rename,
+		// which rejects an existing destination even if it appeared mid-upload.
+		ext := path.Ext(t.RemotePath)
+		if len(ext) > 32 {
+			ext = ""
+		}
+		fsPath = path.Join(path.Dir(t.RemotePath), ".pixeldrain-upload-"+rand.Text()+ext)
+		defer func() {
+			dctx, dcancel := context.WithTimeout(context.Background(), 10*time.Second)
+			defer dcancel()
+			_ = a.client.FSDelete(dctx, fsPath, false)
+		}()
 		var n *pdNode
-		n, err = a.client.FSPut(actx, t.RemotePath, body, size)
+		n, err = a.client.FSPut(actx, fsPath, body, size)
 		if err == nil {
 			remoteHash = n.SHA256
 		}
@@ -376,31 +413,38 @@ func (a *App) uploadAttempt(ctx context.Context, t *job, size int64, verify bool
 	if body.read != size {
 		return "", "", "", fmt.Errorf(L("업로드 중에 파일 크기가 바뀌었습니다 (%d / %d 바이트)", "The file size changed during upload (%d / %d bytes)"), body.read, size)
 	}
-	if h == nil {
-		return id, remoteHash, "", nil
-	}
-
-	sum = hex.EncodeToString(h.Sum(nil))
-	m.setPhase(t, phaseVerifying)
-	if remoteHash == "" {
-		remoteHash = a.fetchRemoteHash(ctx, t, id)
-	}
-	if remoteHash != "" && !strings.EqualFold(remoteHash, sum) {
-		if id != "" {
-			dctx, dcancel := context.WithTimeout(context.Background(), 30*time.Second)
-			_ = a.client.DeleteFile(dctx, id)
-			dcancel()
+	if h != nil {
+		sum = hex.EncodeToString(h.Sum(nil))
+		m.setPhase(t, phaseVerifying)
+		if remoteHash == "" {
+			remoteHash = a.fetchRemoteHash(ctx, t, id, fsPath)
 		}
-		return "", "", "", errHashMismatch
+		if remoteHash != "" && !strings.EqualFold(remoteHash, sum) {
+			if id != "" {
+				dctx, dcancel := context.WithTimeout(context.Background(), 30*time.Second)
+				_ = a.client.DeleteFile(dctx, id)
+				dcancel()
+			}
+			return "", "", "", errHashMismatch
+		}
+	}
+	if t.Target == targetFS {
+		err = a.client.FSAction(ctx, fsPath, url.Values{"action": {"rename"}, "target": {t.RemotePath}})
+		if errValue(err) == "node_already_exists" {
+			return "", "", "", filesystemConflict(t.RemotePath)
+		}
+		if err != nil {
+			return "", "", "", err
+		}
 	}
 	return id, remoteHash, sum, nil
 }
 
-func (a *App) fetchRemoteHash(ctx context.Context, t *job, id string) string {
+func (a *App) fetchRemoteHash(ctx context.Context, t *job, id, fsPath string) string {
 	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
 	if t.Target == targetFS {
-		if st, err := a.client.FSStat(ctx, t.RemotePath); err == nil {
+		if st, err := a.client.FSStat(ctx, fsPath); err == nil {
 			return st.node().SHA256
 		}
 		return ""

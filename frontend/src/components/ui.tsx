@@ -112,12 +112,16 @@ export function Switch({ checked, onChange, label, hint }: { checked: boolean; o
         role="switch"
         aria-checked={checked}
         onClick={() => onChange(!checked)}
-        className={clsx("relative mt-0.5 h-5 w-9 shrink-0 rounded-full transition-colors", checked ? "bg-hl" : "bg-line")}
+        className={clsx(
+          "relative mt-0.5 h-5 w-9 shrink-0 rounded-full p-0 transition-colors",
+          checked ? "bg-hl" : "bg-faint/45 hover:bg-faint/60",
+        )}
       >
+        {/* The knob is anchored inside the track and slides 16px; a light knob reads on both themes. */}
         <span
           className={clsx(
-            "absolute top-0.5 h-4 w-4 rounded-full bg-panel shadow transition-transform",
-            checked ? "translate-x-[18px]" : "translate-x-0.5",
+            "absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-white shadow-[0_1px_2px_rgb(0_0_0/0.35)] transition-transform",
+            checked && "translate-x-4",
           )}
         />
       </button>

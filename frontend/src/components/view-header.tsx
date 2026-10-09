@@ -26,12 +26,13 @@ export function ViewHeader({
 }) {
   return (
     <header className="flex h-16 shrink-0 items-center gap-3 border-b border-line px-5">
-      <div className="min-w-[7rem] flex-1">
+      <div className="min-w-[7rem] flex-auto">
         <h1 className="truncate text-lg font-semibold leading-tight">{title}</h1>
         {sub && <p className="truncate text-sm text-mute">{sub}</p>}
       </div>
+      {/* The search box gives up width before the title does. */}
       {onQuery && (
-        <label className="relative w-36 shrink lg:w-56">
+        <label className="relative w-36 min-w-[7.5rem] shrink-[10] lg:w-56">
           <Icon name="search" className="pointer-events-none absolute left-2.5 top-1/2 text-[18px] -translate-y-1/2 text-faint" />
           <input
             className="field h-8 pl-8 pr-7 text-sm"

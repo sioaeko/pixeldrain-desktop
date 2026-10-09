@@ -3,10 +3,12 @@
 package mockpd
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"image"
 	"image/color"
+	_ "image/jpeg" // decode seeded photos for thumbnails
 	"image/png"
 	"io"
 	"net/http"
@@ -80,6 +82,8 @@ type Server struct {
 	KeepLimit int64
 	// FileSizeLimit is the plan's per-file limit; 0 reports a free account.
 	FileSizeLimit int64
+	// Thumbs holds prepared thumbnails by file name, e.g. video frames.
+	Thumbs map[string][]byte
 
 	Uploads       int          // completed upload requests
 	Downloads     int          // download requests
@@ -209,7 +213,16 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case len(segs) == 3 && segs[0] == "file" && segs[2] == "info":
 		s.info(w, segs[1])
 	case len(segs) == 3 && segs[0] == "file" && segs[2] == "thumbnail":
-		s.thumb(w, r)
+		var data []byte
+		s.Mu.Lock()
+		if f := s.Files[segs[1]]; f != nil {
+			data = f.Data
+			if t, ok := s.Thumbs[f.Name]; ok {
+				data = t
+			}
+		}
+		s.Mu.Unlock()
+		s.thumb(w, r, data)
 	case len(segs) == 2 && segs[0] == "file" && r.Method == http.MethodDelete:
 		s.deleteFile(w, r, segs[1])
 	case len(segs) == 2 && segs[0] == "file":
@@ -432,10 +445,17 @@ func (s *Server) deleteFile(w http.ResponseWriter, r *http.Request, id string) {
 	writeJSON(w, 200, map[string]any{"success": true, "value": "ok"})
 }
 
-func (s *Server) thumb(w http.ResponseWriter, r *http.Request) {
+// thumb scales real image content down (center crop, box filter) and falls
+// back to a colored pattern for everything else.
+func (s *Server) thumb(w http.ResponseWriter, r *http.Request, data []byte) {
 	n, _ := strconv.Atoi(r.URL.Query().Get("width"))
 	if n <= 0 {
 		n = 128
+	}
+	w.Header().Set("Content-Type", "image/png")
+	if src, _, err := image.Decode(bytes.NewReader(data)); err == nil {
+		_ = png.Encode(w, squareThumb(src, n))
+		return
 	}
 	img := image.NewRGBA(image.Rect(0, 0, n, n))
 	seed := len(r.URL.Path)
@@ -444,8 +464,29 @@ func (s *Server) thumb(w http.ResponseWriter, r *http.Request) {
 			img.Set(x, y, color.RGBA{uint8(40 + (x*3+seed*17)%120), uint8(60 + (y*2+seed*29)%110), uint8(90 + (x+y+seed)%100), 255})
 		}
 	}
-	w.Header().Set("Content-Type", "image/png")
 	_ = png.Encode(w, img)
+}
+
+func squareThumb(src image.Image, n int) image.Image {
+	b := src.Bounds()
+	side := min(b.Dx(), b.Dy())
+	x0, y0 := b.Min.X+(b.Dx()-side)/2, b.Min.Y+(b.Dy()-side)/2
+	dst := image.NewRGBA(image.Rect(0, 0, n, n))
+	for y := 0; y < n; y++ {
+		for x := 0; x < n; x++ {
+			sx0, sx1 := x0+x*side/n, x0+(x+1)*side/n
+			sy0, sy1 := y0+y*side/n, y0+(y+1)*side/n
+			var rr, gg, bb, cnt uint32
+			for sy := sy0; sy < max(sy1, sy0+1); sy += max(1, (sy1-sy0)/4) {
+				for sx := sx0; sx < max(sx1, sx0+1); sx += max(1, (sx1-sx0)/4) {
+					cr, cg, cb, _ := src.At(sx, sy).RGBA()
+					rr, gg, bb, cnt = rr+cr, gg+cg, bb+cb, cnt+1
+				}
+			}
+			dst.Set(x, y, color.RGBA{uint8(rr / cnt >> 8), uint8(gg / cnt >> 8), uint8(bb / cnt >> 8), 255})
+		}
+	}
+	return dst
 }
 
 func (s *Server) serveContent(w http.ResponseWriter, r *http.Request, name string, c Content) {
@@ -559,7 +600,16 @@ func (s *Server) filesystem(w http.ResponseWriter, r *http.Request, raw string) 
 	switch r.Method {
 	case http.MethodGet:
 		if q.Has("thumbnail") {
-			s.thumb(w, r)
+			var data []byte
+			s.Mu.Lock()
+			if n := s.FS[p]; n != nil {
+				data = n.Data
+				if t, ok := s.Thumbs[path.Base(p)]; ok {
+					data = t
+				}
+			}
+			s.Mu.Unlock()
+			s.thumb(w, r, data)
 			return
 		}
 		s.Mu.Lock()

@@ -1,3 +1,4 @@
+import clsx from "clsx";
 import { Icon } from "./icon";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { EventsOn } from "../../wailsjs/runtime/runtime";
@@ -178,13 +179,23 @@ export function FSView() {
   const title = (
     <nav aria-label={tr("경로", "Path")} className="flex min-w-0 items-center gap-0.5">
       {crumbs.map((c, i) => (
-        <span key={c.path} className="flex min-w-0 items-center gap-0.5">
+        // Parent folders give up their width first so the current folder stays readable.
+        <span
+          key={c.path}
+          className={clsx("flex items-center gap-0.5", i === crumbs.length - 1 ? "min-w-0 shrink" : i === 0 ? "shrink-0" : "min-w-[2.75rem] shrink-[12]")}
+        >
           {i > 0 && <Icon name="chevron_right" className="text-[18px] shrink-0 text-faint" />}
           {i === crumbs.length - 1 ? (
             <span className="truncate">{i === 0 ? tr("파일시스템", "Filesystem") : c.name}</span>
           ) : (
-            <button className="truncate rounded px-1 text-mute hover:bg-raised hover:text-ink" onClick={() => setPath(c.path)}>
-              {i === 0 ? tr("파일시스템", "Filesystem") : c.name}
+            <button
+              className="truncate rounded px-1 text-mute hover:bg-raised hover:text-ink"
+              onClick={() => setPath(c.path)}
+              title={i === 0 ? tr("파일시스템", "Filesystem") : c.name}
+              aria-label={i === 0 ? tr("파일시스템", "Filesystem") : undefined}
+            >
+              {/* Inside a folder the root becomes an icon so the path has room. */}
+              {i === 0 ? <Icon name="storage" className="align-[-3px] text-[20px]" /> : c.name}
             </button>
           )}
         </span>
@@ -208,7 +219,7 @@ export function FSView() {
         </button>
         <button className="btn" onClick={mkdir} disabled={!dir?.canWrite} title={tr("새 폴더", "New folder")} aria-label={tr("새 폴더", "New folder")}>
           <Icon name="create_new_folder" className="text-[18px]" />
-          <span className="hidden lg:inline">{tr("새 폴더", "New folder")}</span>
+          <span className="hidden xl:inline">{tr("새 폴더", "New folder")}</span>
         </button>
         <LinkButton />
         <UploadButton target={target} />

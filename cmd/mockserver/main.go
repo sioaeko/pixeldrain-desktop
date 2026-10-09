@@ -4,14 +4,25 @@
 //	PIXELDRAIN_API_BASE=http://127.0.0.1:8091/api wails dev
 //
 // Log in with API key "test-key" or username/password demo/demo.
+//
+// -seed DIR replaces the built-in samples with real files, e.g. for demo
+// screenshots: DIR/files/* go to "My files", DIR/lists/<title>/* go to "My
+// files" and into a list named <title>, DIR/fs/** become /me/** in the
+// filesystem, and DIR/thumbs/<file name>.jpg is served as that file's
+// thumbnail (for videos).
 package main
 
 import (
 	"crypto/rand"
 	"flag"
 	"fmt"
+	"io/fs"
 	"log"
 	"net/http"
+	"os"
+	"path/filepath"
+	"sort"
+	"strings"
 	"time"
 
 	"pixeldrain-desktop/internal/mockpd"
@@ -21,6 +32,7 @@ func main() {
 	addr := flag.String("addr", "127.0.0.1:8091", "listen address")
 	throttle := flag.Int64("throttle", 0, "limit transfer speed to this many KiB/s (0 = unlimited)")
 	lang := flag.String("lang", "ko", "language of the sample file names: ko or en")
+	seed := flag.String("seed", "", "folder with files/, lists/<title>/ and fs/ to serve instead of the samples")
 	flag.Parse()
 	n := func(ko, en string) string {
 		if *lang == "en" {
@@ -31,6 +43,13 @@ func main() {
 
 	s := mockpd.New()
 	s.Throttle = *throttle * 1024
+	if *seed != "" {
+		if err := seedFrom(s, *seed); err != nil {
+			log.Fatal(err)
+		}
+		serve(s, *addr)
+		return
+	}
 	blob := func(n int) []byte {
 		b := make([]byte, n)
 		_, _ = rand.Read(b)
@@ -56,6 +75,68 @@ func main() {
 	s.AddFS(n("/me/사진/2026/가을.jpg", "/me/Photos/2026/autumn.jpg"), blob(1_400_000))
 	s.AddFS("/me/notes.txt", []byte("hello from the filesystem"))
 
-	log.Printf("mock pixeldrain API on http://%s/api (key %q, user demo/demo)", *addr, mockpd.ValidKey)
-	log.Fatal(http.ListenAndServe(*addr, s))
+	serve(s, *addr)
+}
+
+func serve(s *mockpd.Server, addr string) {
+	log.Printf("mock pixeldrain API on http://%s/api (key %q, user demo/demo)", addr, mockpd.ValidKey)
+	log.Fatal(http.ListenAndServe(addr, s))
+}
+
+func seedFrom(s *mockpd.Server, dir string) error {
+	thumbs, _ := filepath.Glob(filepath.Join(dir, "thumbs", "*.jpg"))
+	s.Thumbs = map[string][]byte{}
+	for _, t := range thumbs {
+		if b, err := os.ReadFile(t); err == nil {
+			s.Thumbs[strings.TrimSuffix(filepath.Base(t), ".jpg")] = b
+		}
+	}
+	// Spread upload times over the past days so sorting looks natural.
+	age := time.Duration(0)
+	stamp := func(id string) {
+		s.Mu.Lock()
+		s.Files[id].Uploaded = time.Now().Add(-age)
+		s.Mu.Unlock()
+		age += 3*time.Hour + 17*time.Minute
+	}
+	files, _ := filepath.Glob(filepath.Join(dir, "files", "*"))
+	sort.Strings(files)
+	for _, f := range files {
+		if b, err := os.ReadFile(f); err == nil {
+			stamp(s.AddFile(filepath.Base(f), b))
+		}
+	}
+	lists, _ := os.ReadDir(filepath.Join(dir, "lists"))
+	for i, l := range lists {
+		if !l.IsDir() {
+			continue
+		}
+		members, _ := filepath.Glob(filepath.Join(dir, "lists", l.Name(), "*"))
+		sort.Strings(members)
+		var ids []string
+		for _, f := range members {
+			if b, err := os.ReadFile(f); err == nil {
+				id := s.AddFile(filepath.Base(f), b)
+				stamp(id)
+				ids = append(ids, id)
+			}
+		}
+		id := fmt.Sprintf("demo%04d", i+1)
+		s.Mu.Lock()
+		s.Lists[id] = &mockpd.List{ID: id, Title: l.Name(), Created: time.Now().Add(-time.Duration(i+1) * 26 * time.Hour), Files: ids}
+		s.Mu.Unlock()
+	}
+	root := filepath.Join(dir, "fs")
+	return filepath.WalkDir(root, func(p string, d fs.DirEntry, err error) error {
+		if err != nil || d.IsDir() {
+			return nil
+		}
+		b, err := os.ReadFile(p)
+		if err != nil {
+			return err
+		}
+		rel, _ := filepath.Rel(root, p)
+		s.AddFS("/me/"+filepath.ToSlash(rel), b)
+		return nil
+	})
 }
